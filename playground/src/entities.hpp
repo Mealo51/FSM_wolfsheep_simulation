@@ -4,37 +4,67 @@
 
 #include "raylib.h"
 
+struct sheep {
+	sheep() = default;
+
+	void update(float dt);
+	void render() const;
+
+	float HP;
+	float fullness;
+	float speed;
+	float reproduce_cd;
+	float detection_radius;
+	bool wolfNearby;
+	Vector2 position;
+	Vector2 velocity;
+};
+
+struct wolf {
+	wolf() = default;
+
+	void update(float dt);
+	void render() const;
+
+	float hunger;
+	float speed;
+	float detection_radius;
+	Vector2 position;
+	Vector2 velocity;
+};
+
+
 struct Circle {
-   Circle() = default;
+	Circle() = default;
 
-   void update(float dt);
-   void render() const;
+	void update(float dt);
+	void render() const;
 
-   Vector2 position{ 0,0 };
-   float   radius{ 0 };
-   Vector2 velocity{ 0,0 };
-   Color   color{ 0 };
+	Vector2 position{ 0,0 };
+	float   radius{ 0 };
+	Vector2 velocity{ 0,0 };
+	Color   color{ 0 };
 };
 
 struct AlignedRectangle {
-   AlignedRectangle() = default;
+	AlignedRectangle() = default;
 
-   void update(float dt);
-   void render() const;
+	void update(float dt);
+	void render() const;
 
-   Vector2 position{ 0,0 };
-   Vector2 extent{ 0,0 };
-   Color   color{ 0 };
+	Vector2 position{ 0,0 };
+	Vector2 extent{ 0,0 };
+	Color   color{ 0 };
 };
 
 struct RotatedRectangle {
-   RotatedRectangle() = default;
+	RotatedRectangle() = default;
 
-   void update(float dt);
-   void render() const;
+	void update(float dt);
+	void render() const;
 
-   Vector2 position{ 0,0 };
-   Vector2 extent{ 0,0 };
-   float   rotation{ 0 };
-   Color   color{ 0 };
+	Vector2 position{ 0,0 };
+	Vector2 extent{ 0,0 };
+	float   rotation{ 0 };
+	Color   color{ 0 };
 };

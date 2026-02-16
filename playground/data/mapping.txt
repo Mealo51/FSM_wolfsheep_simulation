@@ -1,0 +1,4 @@
+version "1"
+key "jump" 1 32
+axis "test" 1 65 1 68
+dir "move" 1 263 1 262 1 265 1 264
