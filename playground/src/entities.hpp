@@ -9,6 +9,12 @@ struct sheep {
 
 	void update(float dt);
 	void render() const;
+	bool checkWolf(wolf w);
+	void checkSheep(sheep s);
+	void reproduce();
+	void searchGrass();
+	void eatGrass();
+	void defecate();
 
 	float HP;
 	float fullness;
