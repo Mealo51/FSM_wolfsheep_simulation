@@ -31,6 +31,9 @@ struct wolf {
 
 	void update(float dt);
 	void render() const;
+	void checkSheep();
+	void attack();
+
 
 	float hunger;
 	float speed;
