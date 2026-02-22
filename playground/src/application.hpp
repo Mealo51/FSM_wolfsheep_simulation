@@ -15,6 +15,8 @@ struct App {
 
    Vector2 bounds{ 0,0 };
 
+   sheep s1;
+
    InputContext m_input;
 };
 

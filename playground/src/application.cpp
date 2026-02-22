@@ -25,7 +25,7 @@ static void check_collisions(App& app)
 void App::update(float dt)
 {
    m_input.update();
-
+   s1.update(dt);
    constexpr float SPEED = 100.0f;
    Vector2 direction = m_input.value("move");
    check_collisions(*this);
@@ -33,5 +33,5 @@ void App::update(float dt)
 
 void App::render()
 {
-   
+	s1.render();
 }
