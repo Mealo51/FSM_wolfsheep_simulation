@@ -4,6 +4,7 @@
 
 #include "raymath.h"
 
+
 // note: Vector2 sanity operators
 inline Vector2 operator- (const Vector2& rhs)                     { return Vector2{ -rhs.x, -rhs.y }; }
 inline Vector2 operator+ (const Vector2& lhs, const Vector2& rhs) { return Vector2{ lhs.x + rhs.x, lhs.y + rhs.y }; }

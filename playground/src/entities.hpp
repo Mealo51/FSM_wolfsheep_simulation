@@ -5,7 +5,7 @@
 #include "raylib.h"
 
 struct sheep {
-	sheep() = default;
+	sheep();
 
 	void update(float dt);
 	void render() const;
@@ -23,6 +23,7 @@ struct sheep {
 	bool wolfNearby;
 	Vector2 position;
 	Vector2 velocity;
+	Vector2 acceleration;
 };
 
 struct wolf {
@@ -39,5 +40,6 @@ struct wolf {
 	float detection_radius;
 	Vector2 position;
 	Vector2 velocity;
+	Vector2 acceleration;
 };
 

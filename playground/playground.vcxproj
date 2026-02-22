@@ -112,6 +112,7 @@
     <ClInclude Include="src\application.hpp" />
     <ClInclude Include="src\collision.hpp" />
     <ClInclude Include="src\common.hpp" />
+    <ClInclude Include="src\Constant.hpp" />
     <ClInclude Include="src\entities.hpp" />
     <ClInclude Include="src\input.hpp" />
     <ClInclude Include="src\zip.hpp" />
