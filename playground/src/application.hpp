@@ -14,10 +14,7 @@ struct App {
    void render();
 
    Vector2 bounds{ 0,0 };
-   AlignedRectangle aligned;
-   RotatedRectangle rotated;
-   Circle circles[CIRCLE_COUNT];
-   
+
    InputContext m_input;
 };
 

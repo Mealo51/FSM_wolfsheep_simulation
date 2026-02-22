@@ -8,9 +8,10 @@ int main()
    // note: config
    constexpr int WINDOW_WIDTH = 1024;
    constexpr int WINDOW_HEIGHT = 1024;
-
+   constexpr int fps_lim = 60;
    // note: initialize
    InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Playground");
+   SetTargetFPS(fps_lim);
    //InitAudioDevice();
 
    App app(WINDOW_WIDTH, WINDOW_HEIGHT);
