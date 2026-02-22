@@ -26,5 +26,5 @@ void sheep::update(float dt)
 
 void sheep::render() const
 {
-	DrawCircleV(position, 5, LIGHTGRAY);
+	DrawCircleV(position, 15, WHITE);
 }

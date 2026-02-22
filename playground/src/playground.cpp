@@ -16,7 +16,7 @@ int main()
    App app(WINDOW_WIDTH, WINDOW_HEIGHT);
 
    while (!WindowShouldClose()) {
-      ClearBackground(RAYWHITE);
+      ClearBackground(DARKBROWN);
       BeginDrawing();
 
       float dt = GetFrameTime();
