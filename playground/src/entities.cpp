@@ -28,3 +28,13 @@ void sheep::render() const
 {
 	DrawCircleV(position, 15, WHITE);
 }
+
+wolf::wolf()
+{
+	hunger = 0;
+	speed = 1.5f;
+	detection_radius = 2;
+	position = { 0,0 };
+	velocity = { 0,0 };
+	acceleration = { 0,0 };
+}

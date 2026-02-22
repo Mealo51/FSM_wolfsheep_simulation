@@ -6,8 +6,6 @@
 
 int main()
 {
-   // note: config
-
    // note: initialize
    InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Playground");
    SetTargetFPS(fps_lim);

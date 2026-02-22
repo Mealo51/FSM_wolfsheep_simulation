@@ -27,7 +27,7 @@ struct sheep {
 };
 
 struct wolf {
-	wolf() = default;
+	wolf();
 
 	void update(float dt);
 	void render() const;
