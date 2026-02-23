@@ -17,5 +17,7 @@ struct App {
 
    Vector2 bounds{ 0,0 };
    InputContext m_input;
+
+   grass grass_tiles = grass({200,200});
 };
 

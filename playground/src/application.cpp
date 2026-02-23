@@ -28,9 +28,10 @@ void App::update(float dt)
    constexpr float SPEED = 100.0f;
    Vector2 direction = m_input.value("move");
    check_collisions(*this);
+   grass_tiles.update(dt);
 }
 
 void App::render()
 {
-
+	grass_tiles.render();
 }

@@ -7,7 +7,7 @@ constexpr int WINDOW_HEIGHT = 1024;
 constexpr int fps_lim = 60;
 
 // "tile" config
-static float tile_len = 20.f;
+static float tile_len = 64.f;
 static float tile_x = static_cast<float>(WINDOW_WIDTH) / tile_len;
 static float tile_y = static_cast<float>(WINDOW_HEIGHT) / tile_len;
 static float tick_rate = 1.f; 
