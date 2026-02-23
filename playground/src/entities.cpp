@@ -35,7 +35,8 @@ wolf::wolf()
 	hunger = 0;
 	speed = 1.5f * tile_len;
 	detection_radius = 2.f * tile_len;
-	position = { 0,0 };
+	denposition = { Random::rangef(0.f, 1024.f),Random::rangef(0.f, 1024.f) };
+	position = denposition;
 	velocity = { 0,0 };
 	acceleration = { 0,0 };
 }
