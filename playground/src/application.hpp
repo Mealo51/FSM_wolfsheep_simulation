@@ -7,8 +7,6 @@
 #include "entities.hpp"
 #include "grass.hpp"
 
-constexpr int CIRCLE_COUNT = 128;
-
 struct App {
    App(int width, int height);
 
