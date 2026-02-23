@@ -34,7 +34,21 @@ void sheep::sense()
 {
 	checkSheep();
 	checkWolf();
+	searchGrass();
 }
+
+void sheep::checkSheep()
+{
+}
+
+void sheep::checkWolf()
+{
+}
+
+void sheep::searchGrass()
+{
+}
+
 
 wolf::wolf()
 {
