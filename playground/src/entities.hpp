@@ -9,7 +9,9 @@ struct sheep {
 
 	void update(float dt);
 	void render() const;
-	void checkSheep(sheep s);
+	void sense();
+	void checkSheep();
+	void checkWolf();
 	void reproduce();
 	void searchGrass();
 	void eatGrass();
@@ -31,6 +33,7 @@ struct wolf {
 
 	void update(float dt);
 	void render() const;
+	void sense();
 	void checkSheep();
 	void attack();
 

@@ -30,6 +30,12 @@ void sheep::render() const
 	DrawCircleV(position, sheep_radius, WHITE);
 }
 
+void sheep::sense()
+{
+	checkSheep();
+	checkWolf();
+}
+
 wolf::wolf()
 {
 	hunger = 0;
