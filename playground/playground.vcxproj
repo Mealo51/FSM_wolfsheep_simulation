@@ -104,6 +104,7 @@
     <ClCompile Include="src\application.cpp" />
     <ClCompile Include="src\collision.cpp" />
     <ClCompile Include="src\entities.cpp" />
+    <ClCompile Include="src\grass.cpp" />
     <ClCompile Include="src\input.cpp" />
     <ClCompile Include="src\playground.cpp" />
     <ClCompile Include="src\zip.cpp" />
@@ -114,6 +115,7 @@
     <ClInclude Include="src\common.hpp" />
     <ClInclude Include="src\Constant.hpp" />
     <ClInclude Include="src\entities.hpp" />
+    <ClInclude Include="src\grass.hpp" />
     <ClInclude Include="src\input.hpp" />
     <ClInclude Include="src\zip.hpp" />
   </ItemGroup>
