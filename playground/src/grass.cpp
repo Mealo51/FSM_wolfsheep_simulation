@@ -23,6 +23,25 @@ void grass::update(float dt)
 	handleState();
 }
 
+void grass::render() const
+{
+	switch (state) {
+	case GrassState::growing:
+	case GrassState::growing_fast:
+		DrawRectangleV(position, bounds, YELLOW);
+		break;
+	case GrassState::grown:
+		DrawRectangleV(position, bounds, GREEN);
+		break;
+	case GrassState::spreading:
+		DrawRectangleV(position, bounds, BLUE);
+		break;
+	case GrassState::wilting:
+		DrawRectangleV(position, bounds, BROWN);
+		break;
+	}
+}
+
 void grass::handleState() {
 	switch (state) {
 	case GrassState::growing:

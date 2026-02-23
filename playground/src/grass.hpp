@@ -27,4 +27,5 @@ struct grass {
 	bool near_manure;
 	GrassState state;
 	Vector2 position;
+	Vector2 bounds{ tile_len, tile_len };
 };

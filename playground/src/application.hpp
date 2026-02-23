@@ -3,7 +3,9 @@
 #pragma once
 
 #include "input.hpp"
+#include "Constant.hpp"
 #include "entities.hpp"
+#include "grass.hpp"
 
 constexpr int CIRCLE_COUNT = 128;
 
