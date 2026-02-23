@@ -23,6 +23,7 @@ void sheep::update(float dt)
 {
 	velocity = Vector2Add(velocity, acceleration * dt);
 	position = Vector2Add(position, velocity);
+	sense();
 }
 
 void sheep::render() const
