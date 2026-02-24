@@ -24,7 +24,7 @@ void sheep::update(float dt)
 {
 	velocity = Vector2Add(velocity, acceleration * dt);
 	position = Vector2Add(position, velocity);
-	sense();
+	checkState();
 }
 
 void sheep::render() const
@@ -32,11 +32,15 @@ void sheep::render() const
 	DrawCircleV(position, sheep_radius, WHITE);
 }
 
-void sheep::sense()
+void sheep::checkState()
 {
 	checkSheep();
 	checkWolf();
 	searchGrass();
+}
+
+void sheep::handleState()
+{
 }
 
 void sheep::checkSheep()
@@ -68,7 +72,7 @@ void wolf::update(float dt)
 {
 	velocity = Vector2Add(velocity, acceleration * dt);
 	position = Vector2Add(position, velocity);
-	sense();
+	checkState();
 }
 
 void wolf::render() const
@@ -76,7 +80,7 @@ void wolf::render() const
 	DrawCircleV(position, wolf_radius, DARKGRAY);
 }
 
-void wolf::sense()
+void wolf::checkState()
 {
 	checkSheep();
 }

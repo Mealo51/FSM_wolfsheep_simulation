@@ -17,7 +17,8 @@ struct sheep {
 
 	void update(float dt);
 	void render() const;
-	void sense();
+	void checkState();
+	void handleState();
 	void checkSheep();
 	void checkWolf();
 	void reproduce();
@@ -31,6 +32,7 @@ struct sheep {
 	float reproduce_cd;
 	float detection_radius;
 	bool wolfNearby;
+	sheepState state;
 	Vector2 position;
 	Vector2 velocity;
 	Vector2 acceleration;
@@ -49,7 +51,7 @@ struct wolf {
 
 	void update(float dt);
 	void render() const;
-	void sense();
+	void checkState();
 	void checkSheep();
 	void attack();
 
@@ -57,6 +59,7 @@ struct wolf {
 	float hunger;
 	float speed;
 	float detection_radius;
+	wolfState state;
 	Vector2 position;
 	Vector2 velocity;
 	Vector2 acceleration;
