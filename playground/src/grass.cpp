@@ -13,7 +13,7 @@ grass::grass(Vector2 pos)
 	grown_countdown = 0.f;
 	spread_attempts = 0;
 	near_manure = false;
-	state = Random::range(0, 1) == 0 ? GrassState::growing : GrassState::grown;
+	state = GetRandomValue(0,9) <= 3 ? GrassState::growing : GrassState::grown;
 	position = pos;
 	spread_indices = { -1, -1 };
 }
@@ -29,16 +29,16 @@ void grass::render() const
 	switch (state) {
 	case GrassState::growing:
 	case GrassState::growing_fast:
-		DrawRectangleV(position, bounds, YELLOW);
-		break;
-	case GrassState::grown:
 		DrawRectangleV(position, bounds, GREEN);
 		break;
+	case GrassState::grown:
+		DrawRectangleV(position, bounds, LIME);
+		break;
 	case GrassState::spreading:
-		DrawRectangleV(position, bounds, BLUE);
+		DrawRectangleV(position, bounds, DARKBLUE);
 		break;
 	case GrassState::wilting:
-		DrawRectangleV(position, bounds, BROWN);
+		DrawRectangleV(position, bounds, YELLOW);
 		break;
 	}
 }
@@ -84,13 +84,16 @@ void grass::checkState() {
 		break;
 
 	case GrassState::grown:
-		// A grown tile might randomly decide to spread
-		for (int i = 0; i < GetRandomValue(0, 3); i++)
-		{ //randomly choose 0-2 times to check spreading
-			if (GetRandomValue(0, 1000) > 800 && spread_attempts < 2) spread_attempts++;
-			DrawText(TextFormat("Spread attempts: %d", spread_attempts), 10, 10, 20, BLACK);
+		if (grown_countdown >= 600.0f)
+		{
+			// A grown tile might randomly decide to spread
+			for (int i = 0; i < GetRandomValue(0, 3); i++)
+			{ //randomly choose 0-2 times to check spreading
+				if (GetRandomValue(0, 1000) > 800 && spread_attempts < 2) spread_attempts++;
+				DrawText(TextFormat("Spread attempts: %d", spread_attempts), 10, 10, 20, BLACK);
+			}
+			if (spread_attempts > 0) state = GrassState::spreading;
 		}
-		if (spread_attempts > 0) state = GrassState::spreading;
 		break;
 
 	case GrassState::spreading:
