@@ -32,7 +32,6 @@ struct sheep {
 	float speed;
 	float reproduce_cd;
 	float detection_radius;
-	bool wolfNearby;
 	sheepState state;
 	Vector2 position;
 	Vector2 velocity;

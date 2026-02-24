@@ -11,9 +11,8 @@ sheep::sheep()
 	HP = 100.f;
 	fullness = 0.f;
 	reproduce_cd = 600.f;  //10 sec cooldown at 60 fps, can be modified by fullness or other factors
-	speed = 1.f * tile_len;
+	speed = 1.f * tile_len / 2;
 	detection_radius = 4.f * tile_len;
-	wolfNearby = false;
 	position = { (float)GetRandomValue(0 + static_cast<int>(sheep_radius), 1024 - static_cast<int>(sheep_radius)),
 		(float)GetRandomValue(0 + static_cast<int>(sheep_radius), 1024 - static_cast<int>(sheep_radius)) };
 	velocity = { 0.f,0.f };
@@ -27,13 +26,37 @@ void sheep::update(float dt)
 	position = Vector2Add(position, velocity);
 	checkState();
 	handleState();
-
 	reproduce_cd--;
 }
 
 void sheep::render() const
 {
 	DrawCircleV(position, sheep_radius, WHITE);
+	
+	//debug text
+	switch (state)
+	{
+		case sheepState::roaming:
+			DrawText("Roaming", static_cast<int>(position.x) - 20,
+				static_cast<int>(position.y) - 30, 10, BLACK);
+			break;
+		case sheepState::eating:
+			DrawText("Eating", static_cast<int>(position.x) - 20,
+				static_cast<int>(position.y) - 30, 10, BLACK);
+			break;
+		case sheepState::fleeing:
+			DrawText("Fleeing", static_cast<int>(position.x) - 20,
+				static_cast<int>(position.y) - 30, 10, BLACK);
+			break;
+		case sheepState::reproducing:
+			DrawText("Reproducing", static_cast<int>(position.x) - 30,
+				static_cast<int>(position.y) - 30, 10, BLACK);
+			break;
+		case sheepState::defecating:
+			DrawText("Defecating", static_cast<int>(position.x) - 30,
+				static_cast<int>(position.y) - 30, 10, BLACK);
+			break;
+	}
 }
 
 void sheep::checkState()
@@ -48,6 +71,10 @@ void sheep::checkState()
 		}
 		else if (searchGrass()) {
 			state = sheepState::eating;
+		}
+		else
+		{
+			acceleration = Random::direction() * speed; // random roaming direction
 		}
 		break;
 	case sheepState::eating:
