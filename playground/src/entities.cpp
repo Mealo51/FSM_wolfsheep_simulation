@@ -10,14 +10,15 @@ sheep::sheep()
 {
 	HP = 100.f;
 	fullness = 0.f;
-	reproduce_cd = 20.f;
+	reproduce_cd = 600.f;  //10 sec cooldown at 60 fps, can be modified by fullness or other factors
 	speed = 1.f * tile_len;
 	detection_radius = 4.f * tile_len;
 	wolfNearby = false;
-	position = { (float)GetRandomValue(0 + static_cast<int>(sheep_radius), 1024 - static_cast<int>(sheep_radius)), 
+	position = { (float)GetRandomValue(0 + static_cast<int>(sheep_radius), 1024 - static_cast<int>(sheep_radius)),
 		(float)GetRandomValue(0 + static_cast<int>(sheep_radius), 1024 - static_cast<int>(sheep_radius)) };
 	velocity = { 0.f,0.f };
 	acceleration = { 0.f,0.f };
+	state = sheepState::roaming;
 }
 
 void sheep::update(float dt)
@@ -25,6 +26,9 @@ void sheep::update(float dt)
 	velocity = Vector2Add(velocity, acceleration * dt);
 	position = Vector2Add(position, velocity);
 	checkState();
+	handleState();
+
+	reproduce_cd--;
 }
 
 void sheep::render() const
@@ -34,38 +38,91 @@ void sheep::render() const
 
 void sheep::checkState()
 {
-	checkSheep();
-	checkWolf();
-	searchGrass();
+	switch (state) {
+	case sheepState::roaming:
+		if(checkWolf()) {
+			state = sheepState::fleeing;
+		}
+		else if (checkSheep()&&fullness >=80 && reproduce_cd <=0.f) {
+			state = sheepState::reproducing;
+		}
+		else if (searchGrass()) {
+			state = sheepState::eating;
+		}
+		break;
+	case sheepState::eating:
+		eatGrass();
+		break;
+	case sheepState::fleeing:
+		checkWolf();
+		break;
+	case sheepState::reproducing:
+		break;
+	case sheepState::defecating:
+		break;
+	}
 }
 
 void sheep::handleState()
 {
+	switch (state) {
+
+	case sheepState::roaming:
+		// Logic for roaming behavior
+		break;
+	case sheepState::eating:
+		break;
+	case sheepState::fleeing:
+		break;
+	case sheepState::reproducing:
+		reproduce();
+		break;
+	case sheepState::defecating:
+		defecate();
+		break;
+	}
+
 }
 
-void sheep::checkSheep()
+bool sheep::checkSheep()
+{
+	return false;
+}
+
+bool sheep::checkWolf()
+{
+	return false;
+}
+
+bool sheep::searchGrass()
+{
+	return false;
+}
+
+void sheep::eatGrass()
 {
 }
 
-void sheep::checkWolf()
+void sheep::reproduce()
 {
+	reproduce_cd = 600.f; //reset reproduce cooldown
 }
 
-void sheep::searchGrass()
+void sheep::defecate()
 {
 }
-
 
 wolf::wolf()
 {
 	hunger = 0;
 	speed = 1.5f * tile_len;
 	detection_radius = 2.f * tile_len;
-	denposition = { (float)GetRandomValue(0 + static_cast<int>(wolf_radius), 1024 - static_cast<int>(wolf_radius)), 
+	denposition = { (float)GetRandomValue(0 + static_cast<int>(wolf_radius), 1024 - static_cast<int>(wolf_radius)),
 		(float)GetRandomValue(0 + static_cast<int>(wolf_radius), 1024 - static_cast<int>(wolf_radius)) };
 	position = denposition;
 	velocity = { 0,0 };
 	acceleration = { 0,0 };
+	state = wolfState::sleeping;
 }
 
 void wolf::update(float dt)
@@ -82,9 +139,37 @@ void wolf::render() const
 
 void wolf::checkState()
 {
-	checkSheep();
+	switch (state) {
+	case wolfState::roaming:
+		if (checkSheep()) {
+			state = wolfState::attacking;
+		}
+		else if (hunger <= 80.f) {
+			state = wolfState::sleeping;
+		}
+		break;
+	}
 }
 
-void wolf::checkSheep()
+void wolf::handleState()
+{
+	switch (state) {
+	case wolfState::roaming:
+		hunger += 0.1f; // increase hunger over time
+		break;
+	case wolfState::attacking:
+
+		break;
+	case wolfState::sleeping:
+		break;
+	}
+}
+
+bool wolf::checkSheep()
+{
+	return false;
+}	
+
+void wolf::attack()
 {
 }

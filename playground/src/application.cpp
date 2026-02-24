@@ -51,6 +51,7 @@ void App::update(float dt)
 	for(auto& s : m_sheep) {
 		s.update(dt);
 	}
+	m_wolf.update(dt);
 }
 
 void App::render()
@@ -61,4 +62,5 @@ void App::render()
 	for(auto& s : m_sheep) {
 		s.render();
 	}
+	m_wolf.render();
 }

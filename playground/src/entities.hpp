@@ -5,11 +5,11 @@
 #include "raylib.h"
 
 enum class sheepState {
-	idle,
 	roaming,
 	eating,
 	fleeing,
 	reproducing,
+	defecating,
 };
 
 struct sheep {
@@ -19,10 +19,11 @@ struct sheep {
 	void render() const;
 	void checkState();
 	void handleState();
-	void checkSheep();
-	void checkWolf();
+
+	bool checkWolf();
+	bool checkSheep();
+	bool searchGrass();
 	void reproduce();
-	void searchGrass();
 	void eatGrass();
 	void defecate();
 
@@ -39,9 +40,7 @@ struct sheep {
 };
 
 enum class wolfState {
-	idle,
 	roaming,
-	hunting,
 	attacking,
 	sleeping,
 };
@@ -52,7 +51,9 @@ struct wolf {
 	void update(float dt);
 	void render() const;
 	void checkState();
-	void checkSheep();
+	void handleState();
+
+	bool checkSheep();
 	void attack();
 
 
