@@ -14,7 +14,7 @@ grass::grass(Vector2 pos)
 	spread_attempts = 0;
 	near_manure = false;
 	state = GetRandomValue(0,9) <= 5 ? GrassState::growing : 
-		GetRandomValue(0,9) <= 2 ? GrassState::grown : GrassState::wilting;
+		GetRandomValue(0,9) <= 3 ? GrassState::grown : GrassState::wilting;
 	position = pos;
 	spread_indices = { -1, -1 };
 }
@@ -44,10 +44,6 @@ void grass::render() const
 	}
 }
 
-void grass::spread()
-{
-
-}
 
 void grass::handleState()
 {
@@ -60,7 +56,7 @@ void grass::handleState()
 		break;
 	case GrassState::spreading:
 		// Logic to check empty neighboring tiles
-		spread();
+		//spread state should be implemented in application.cpp to check the actual neighboring tiles in the grid and spread if possible
 		state = GrassState::wilting;
 		break;
 	case GrassState::wilting:

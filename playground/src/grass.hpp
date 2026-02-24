@@ -26,7 +26,6 @@ struct grass {
 	float death_countdown;
 
 	//spread
-	void spread();
 	int spread_attempts;
 	std::array<int, 2> spread_indices;
 

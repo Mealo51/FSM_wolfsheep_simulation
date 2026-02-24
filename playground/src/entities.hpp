@@ -4,6 +4,14 @@
 
 #include "raylib.h"
 
+enum class sheepState {
+	idle,
+	roaming,
+	eating,
+	fleeing,
+	reproducing,
+};
+
 struct sheep {
 	sheep();
 
@@ -26,6 +34,14 @@ struct sheep {
 	Vector2 position;
 	Vector2 velocity;
 	Vector2 acceleration;
+};
+
+enum class wolfState {
+	idle,
+	roaming,
+	hunting,
+	attacking,
+	sleeping,
 };
 
 struct wolf {
