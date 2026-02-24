@@ -2,6 +2,7 @@
 #pragma once
 
 #include "raylib.h"
+#include <array>
 
 enum class GrassState {
 	growing,
@@ -23,7 +24,12 @@ struct grass {
 	float grow_progress;
 	float grown_countdown;
 	float death_countdown;
+
+	//spread
+	void spread();
 	int spread_attempts;
+	std::array<int, 2> spread_indices;
+
 	bool near_manure;
 	GrassState state;
 	Vector2 position;

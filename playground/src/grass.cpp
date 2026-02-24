@@ -15,6 +15,7 @@ grass::grass(Vector2 pos)
 	near_manure = false;
 	state = Random::range(0, 1) == 0 ? GrassState::growing : GrassState::grown;
 	position = pos;
+	spread_indices = { -1, -1 };
 }
 
 void grass::update(float dt)
@@ -42,7 +43,13 @@ void grass::render() const
 	}
 }
 
-void grass::handleState() {
+void grass::spread()
+{
+
+}
+
+void grass::handleState()
+{
 	switch (state) {
 	case GrassState::growing:
 		grow_progress += growth_rate;
@@ -52,14 +59,14 @@ void grass::handleState() {
 		break;
 	case GrassState::spreading:
 		// Logic to check empty neighboring tiles
-		//spread()
-		state = GrassState::grown;
+		spread();
+		state = GrassState::wilting;
 		break;
 	case GrassState::wilting:
 		death_countdown += tick_rate; // after 10sec world should delete this grass tile
 		break;
 	case GrassState::grown:
-		grown_countdown += tick_rate; // after 20sec grass should start wilting
+		grown_countdown += tick_rate; // after 10sec grass should start wilting
 		break;
 	}
 }
@@ -67,27 +74,30 @@ void grass::handleState() {
 void grass::checkState() {
 	switch (state) {
 	case GrassState::growing:
-		if (grow_progress >= 1200.0f) state = GrassState::grown;
+		if (grow_progress >= 600.0f) state = GrassState::grown;
 		if (near_manure) state = GrassState::growing_fast;
 		break;
 
 	case GrassState::growing_fast:
-		if (grow_progress >= 600.0f) state = GrassState::grown;
+		if (grow_progress >= 300.0f) state = GrassState::grown;
 		if (!near_manure) state = GrassState::growing;
 		break;
 
 	case GrassState::grown:
 		// A grown tile might randomly decide to spread
-		for (int i = 0; i < GetRandomValue(0, 4); i++) { //randomly choose 1-5 times to check spreading
-			if (GetRandomValue(0, 1000) > 750) spread_attempts++;
+		for (int i = 0; i < GetRandomValue(0, 3); i++)
+		{ //randomly choose 0-2 times to check spreading
+			if (GetRandomValue(0, 1000) > 800 && spread_attempts < 2) spread_attempts++;
+			DrawText(TextFormat("Spread attempts: %d", spread_attempts), 10, 10, 20, BLACK);
 		}
 		if (spread_attempts > 0) state = GrassState::spreading;
 		break;
 
 	case GrassState::spreading:
-		for (int i = 0; i < spread_attempts; i++) {
-			GetRandomValue(1, 8); // this will be used to determine which neighboring tile to spread to
-			//spread to the chosen tile if it's empty
+		for (int i = 0; i < spread_attempts; i++)
+		{
+			spread_indices[i] = GetRandomValue(0, 7); 
+			//randomly choose a direction to spread (0-7 for 8 neighboring tiles)
 		}
 		break;
 	}
