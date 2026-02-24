@@ -13,7 +13,8 @@ grass::grass(Vector2 pos)
 	grown_countdown = 0.f;
 	spread_attempts = 0;
 	near_manure = false;
-	state = GetRandomValue(0,9) <= 3 ? GrassState::growing : GrassState::grown;
+	state = GetRandomValue(0,9) <= 5 ? GrassState::growing : 
+		GetRandomValue(0,9) <= 2 ? GrassState::grown : GrassState::wilting;
 	position = pos;
 	spread_indices = { -1, -1 };
 }
