@@ -56,6 +56,12 @@ namespace Random {
       return Vector2{ cosf(r), sinf(r) }; 
    }
 
+   inline Vector2 rdirection()
+   {
+	   const float r = static_cast<float>(GetRandomValue(0, 360)) * (Math::kPI / 180.f);
+	   return Vector2{ cosf(r), sinf(r) };
+   }
+
    inline Vector2 position_in_bounds(const Vector2& min, const Vector2& max) 
    { 
       return Vector2{ rangef(min.x, max.x), rangef(min.y, max.y) }; 

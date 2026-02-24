@@ -8,7 +8,7 @@ constexpr Color NON_COLLIDING_COLOR = LIME;
 
 sheep::sheep()
 {
-	HP = 100.f;
+	HP = 100.f * 60.f;
 	fullness = 0.f;
 	reproduce_cd = 600.f;  //10 sec cooldown at 60 fps, can be modified by fullness or other factors
 	speed = 1.f * tile_len / 2;
@@ -74,7 +74,7 @@ void sheep::checkState()
 		}
 		else
 		{
-			acceleration = Random::direction() * speed; // random roaming direction
+			acceleration = Random::rdirection() * speed; // random roaming direction
 		}
 		break;
 	case sheepState::eating:
@@ -130,9 +130,10 @@ void sheep::eatGrass()
 {
 }
 
-void sheep::reproduce()
+sheep sheep::reproduce()
 {
 	reproduce_cd = 600.f; //reset reproduce cooldown
+	return sheep();
 }
 
 void sheep::defecate()
@@ -157,6 +158,7 @@ void wolf::update(float dt)
 	velocity = Vector2Add(velocity, acceleration * dt);
 	position = Vector2Add(position, velocity);
 	checkState();
+	handleState();
 }
 
 void wolf::render() const
@@ -171,8 +173,21 @@ void wolf::checkState()
 		if (checkSheep()) {
 			state = wolfState::attacking;
 		}
-		else if (hunger <= 80.f) {
+		else if (hunger <= 20.f) {
 			state = wolfState::sleeping;
+		}
+		break;
+	case wolfState::sleeping:
+		if (hunger >= 60.f) {
+			state = wolfState::roaming;
+		}
+		break;
+	case wolfState::attacking:
+		if (hunger <= 20.f) {
+			state = wolfState::sleeping;
+		}
+		else if (hunger >= 20.f) {
+			state = wolfState::roaming;
 		}
 		break;
 	}
@@ -182,12 +197,15 @@ void wolf::handleState()
 {
 	switch (state) {
 	case wolfState::roaming:
-		hunger += 0.1f; // increase hunger over time
+		hunger += 5.f / 60.f; // increase hunger over time
 		break;
 	case wolfState::attacking:
-
+		if (attack()) {
+			hunger -= 60.f;
+		}
 		break;
 	case wolfState::sleeping:
+		hunger += 5.f / 60.f;
 		break;
 	}
 }
@@ -197,6 +215,7 @@ bool wolf::checkSheep()
 	return false;
 }	
 
-void wolf::attack()
+bool wolf::attack()
 {
+	return false;
 }

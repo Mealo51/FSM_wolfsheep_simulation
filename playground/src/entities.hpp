@@ -23,7 +23,7 @@ struct sheep {
 	bool checkWolf();
 	bool checkSheep();
 	bool searchGrass();
-	void reproduce();
+	sheep reproduce();
 	void eatGrass();
 	void defecate();
 
@@ -53,7 +53,7 @@ struct wolf {
 	void handleState();
 
 	bool checkSheep();
-	void attack();
+	bool attack();
 
 
 	float hunger;

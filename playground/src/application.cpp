@@ -50,6 +50,12 @@ void App::update(float dt)
 	}
 	for(auto& s : m_sheep) {
 		s.update(dt);
+		if (Collision::checkSheepWindow(s, bounds)) {
+			//keeps the sheep inside window but current roam would result in sheep getting stuck at the edge of the window, 
+			//need to implement better roaming behavior
+			s.position = Vector2Clamp(s.position, Vector2{ sheep_radius, sheep_radius },
+				Vector2{ bounds.x - sheep_radius, bounds.y - sheep_radius });
+		}
 	}
 	m_wolf.update(dt);
 }
