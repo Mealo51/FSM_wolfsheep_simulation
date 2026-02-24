@@ -96,7 +96,7 @@ void grass::checkState() {
 	case GrassState::spreading:
 		for (int i = 0; i < spread_attempts; i++)
 		{
-			spread_indices[i] = GetRandomValue(0, 7); 
+			spread_indices[i] = GetRandomValue(0, 7);
 			//randomly choose a direction to spread (0-7 for 8 neighboring tiles)
 		}
 		break;

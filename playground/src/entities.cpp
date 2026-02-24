@@ -61,3 +61,24 @@ wolf::wolf()
 	velocity = { 0,0 };
 	acceleration = { 0,0 };
 }
+
+void wolf::update(float dt)
+{
+	velocity = Vector2Add(velocity, acceleration * dt);
+	position = Vector2Add(position, velocity);
+	sense();
+}
+
+void wolf::render() const
+{
+	DrawCircleV(position, wolf_radius, DARKGRAY);
+}
+
+void wolf::sense()
+{
+	checkSheep();
+}
+
+void wolf::checkSheep()
+{
+}
