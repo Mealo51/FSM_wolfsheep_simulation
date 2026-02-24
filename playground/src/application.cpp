@@ -13,7 +13,14 @@ App::App(int width, int height)
 	gx = 0.f;
 	gy = 0.f;
 
+	//sheep initialization
 	m_sheep.reserve(10);
+	for (int i = 0; i < 10; i++)
+	{
+		m_sheep.emplace_back(sheep());
+	}
+
+	//grass initialization
 	m_grass.reserve(static_cast<int>(tile_x * tile_y));
 	for (int i = 0; i < static_cast<int>(tile_x * tile_y); i++)
 	{
@@ -41,11 +48,17 @@ void App::update(float dt)
 	for (auto& g : m_grass) {
 		g.update(dt);
 	}
+	for(auto& s : m_sheep) {
+		s.update(dt);
+	}
 }
 
 void App::render()
 {
 	for (auto& g : m_grass) {
 		g.render();
+	}
+	for(auto& s : m_sheep) {
+		s.render();
 	}
 }

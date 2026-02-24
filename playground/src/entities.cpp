@@ -14,7 +14,8 @@ sheep::sheep()
 	speed = 1.f * tile_len;
 	detection_radius = 4.f * tile_len;
 	wolfNearby = false;
-	position = { Random::rangef(0.f, 1024.f),Random::rangef(0.f, 1024.f) };
+	position = { (float)GetRandomValue(0 + static_cast<int>(sheep_radius), 1024 - static_cast<int>(sheep_radius)), 
+		(float)GetRandomValue(0 + static_cast<int>(sheep_radius), 1024 - static_cast<int>(sheep_radius)) };
 	velocity = { 0.f,0.f };
 	acceleration = { 0.f,0.f };
 }
@@ -56,7 +57,8 @@ wolf::wolf()
 	hunger = 0;
 	speed = 1.5f * tile_len;
 	detection_radius = 2.f * tile_len;
-	denposition = { Random::rangef(0.f, 1024.f),Random::rangef(0.f, 1024.f) };
+	denposition = { (float)GetRandomValue(0 + static_cast<int>(wolf_radius), 1024 - static_cast<int>(wolf_radius)), 
+		(float)GetRandomValue(0 + static_cast<int>(wolf_radius), 1024 - static_cast<int>(wolf_radius)) };
 	position = denposition;
 	velocity = { 0,0 };
 	acceleration = { 0,0 };
