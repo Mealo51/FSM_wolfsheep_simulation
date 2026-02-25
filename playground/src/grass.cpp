@@ -13,8 +13,8 @@ grass::grass(Vector2 pos)
 	grown_countdown = 0.f;
 	spread_attempts = 0;
 	near_manure = false;
-	state = GetRandomValue(0,9) <= 5 ? GrassState::growing : 
-		GetRandomValue(0,9) <= 3 ? GrassState::grown : GrassState::wilting;
+	state = GetRandomValue(0, 9) <= 5 ? GrassState::growing :
+		GetRandomValue(0, 9) <= 3 ? GrassState::grown : GrassState::wilting;
 	position = pos;
 	spread_indices = { -1, -1 };
 }
@@ -31,17 +31,24 @@ void grass::render() const
 	case GrassState::growing:
 	case GrassState::growing_fast:
 		DrawRectangleV(position, bounds, GREEN);
+		DrawText(TextFormat("Growth: %.1f%%", grow_progress / 600.f * 100.f),
+			static_cast<int>(position.x) + 5, static_cast<int>(position.y) + 5, 10, BLACK);
 		break;
 	case GrassState::grown:
 		DrawRectangleV(position, bounds, LIME);
+		DrawText("Grown", static_cast<int>(position.x) + 5, static_cast<int>(position.y) + 5, 10, BLACK);
 		break;
 	case GrassState::spreading:
 		DrawRectangleV(position, bounds, DARKBLUE);
+		DrawText("Spreading", static_cast<int>(position.x) + 5,
+			static_cast<int>(position.y) + 5, 10, BLACK);
 		break;
 	case GrassState::wilting:
 		DrawRectangleV(position, bounds, YELLOW);
+		DrawText("Wilting", static_cast<int>(position.x) + 5,
+			static_cast<int>(position.y) + 5, 10, BLACK);
 		break;
-	}
+	}//dirt state is not rendered, it's just empty space
 }
 
 
@@ -57,13 +64,20 @@ void grass::handleState()
 	case GrassState::spreading:
 		// Logic to check empty neighboring tiles
 		//spread state should be implemented in application.cpp to check the actual neighboring tiles in the grid and spread if possible
-		state = GrassState::wilting;
+		if (spread_countdown >= 600.f)
+		{
+			state = GrassState::wilting;
+		}
 		break;
 	case GrassState::wilting:
 		death_countdown += tick_rate; // after 10sec world should delete this grass tile
+		if (death_countdown >= 600.f) state = GrassState::dirt;
 		break;
 	case GrassState::grown:
 		grown_countdown += tick_rate; // after 10sec grass should start wilting
+		break;
+	case GrassState::dirt:
+		// do nothing, this tile is just dirt
 		break;
 	}
 }
@@ -74,12 +88,10 @@ void grass::checkState() {
 		if (grow_progress >= 600.0f) state = GrassState::grown;
 		if (near_manure) state = GrassState::growing_fast;
 		break;
-
 	case GrassState::growing_fast:
 		if (grow_progress >= 300.0f) state = GrassState::grown;
 		if (!near_manure) state = GrassState::growing;
 		break;
-
 	case GrassState::grown:
 		if (grown_countdown >= 600.0f)
 		{
@@ -92,13 +104,13 @@ void grass::checkState() {
 			if (spread_attempts > 0) state = GrassState::spreading;
 		}
 		break;
-
 	case GrassState::spreading:
 		for (int i = 0; i < spread_attempts; i++)
 		{
 			spread_indices[i] = GetRandomValue(0, 7);
 			//randomly choose a direction to spread (0-7 for 8 neighboring tiles)
 		}
+		spread_countdown += tick_rate;
 		break;
 	}
 }

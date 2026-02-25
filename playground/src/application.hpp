@@ -15,6 +15,8 @@ struct App
 	void update(float dt);
 	void render();
 
+	grass spread();
+
 	float gx, gy;
 	Vector2 bounds{ 0,0 };
 	InputContext m_input;

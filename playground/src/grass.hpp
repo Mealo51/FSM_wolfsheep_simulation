@@ -10,6 +10,7 @@ enum class GrassState {
 	grown,
 	spreading,
 	wilting,
+	dirt
 };
 
 struct grass {
@@ -22,6 +23,9 @@ struct grass {
 
 	float growth_rate;
 	float grow_progress;
+	float spread_countdown; 
+	//to leave a state for spreading otherwise it just jumps straight into wilting from grown 
+	//(grown to spread to wilt but spread goes to wilt instantly)
 	float grown_countdown;
 	float death_countdown;
 
