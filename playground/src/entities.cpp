@@ -133,6 +133,7 @@ void sheep::eatGrass()
 sheep sheep::reproduce()
 {
 	reproduce_cd = 600.f; //reset reproduce cooldown
+	HP -= 30.f;
 	return sheep();
 }
 
