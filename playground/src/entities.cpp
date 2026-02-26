@@ -11,13 +11,14 @@ sheep::sheep()
 	HP = 100.f * 60.f;
 	fullness = 0.f;
 	reproduce_cd = 600.f;  //10 sec cooldown at 60 fps, can be modified by fullness or other factors
-	speed = 1.f * tile_len / 2;
+	speed = 1.f * tile_len * 0.2f;
 	detection_radius = 4.f * tile_len;
 	position = { (float)GetRandomValue(0 + static_cast<int>(sheep_radius), 1024 - static_cast<int>(sheep_radius)),
 		(float)GetRandomValue(0 + static_cast<int>(sheep_radius), 1024 - static_cast<int>(sheep_radius)) };
 	velocity = { 0.f,0.f };
 	acceleration = { 0.f,0.f };
 	state = sheepState::roaming;
+	nearWolf = false;
 	nearManure = false;
 	nearSheep = false;
 	nearGrass = false;
@@ -30,6 +31,8 @@ void sheep::update(float dt)
 	checkState();
 	handleState();
 	reproduce_cd--;
+	acceleration += roam();
+	acceleration += flee();
 }
 
 void sheep::render() const
@@ -66,7 +69,7 @@ void sheep::checkState()
 {
 	switch (state) {
 	case sheepState::roaming:
-		if (checkWolf()) {
+		if (nearWolf) {
 			state = sheepState::fleeing;
 		}
 		else if (nearSheep && fullness >= 80 && reproduce_cd <= 0.f) {
@@ -75,22 +78,18 @@ void sheep::checkState()
 		else if (nearGrass) {
 			state = sheepState::eating;
 		}
-		else
-		{
-			acceleration = Random::rdirection() * speed; // random roaming direction
-		}
 		break;
 	case sheepState::eating:
 		if (nearSheep && fullness >= 80 && reproduce_cd <= 0.f) {
 			state = sheepState::reproducing;
 		}
-		else if(!checkWolf() && !nearGrass)
+		else if(!nearWolf && !nearGrass)
 		{
 			state = sheepState::roaming;
 		}
 		break;
 	case sheepState::fleeing:
-		if(!checkWolf())
+		if(!nearWolf)
 		{
 			state = sheepState::roaming;
 		}
@@ -124,11 +123,21 @@ void sheep::handleState()
 
 }
 
-bool sheep::checkWolf()
+
+//movement functions
+Vector2 sheep::flee()
 {
-	return false;
+	return Vector2{ 0,0 };
 }
 
+Vector2 sheep::roam()
+{
+	return Vector2{ speed * static_cast<float>(GetRandomValue(-1, 1)), 
+		speed * static_cast<float>(GetRandomValue(-1, 1)) };
+}
+
+
+//action functions
 void sheep::eatGrass()
 {
 	fullness += 25.f;

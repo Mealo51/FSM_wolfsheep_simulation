@@ -13,6 +13,7 @@ inline Vector2 operator* (const float lhs, const Vector2& rhs)    { return Vecto
 inline Vector2 operator/ (const float lhs, const Vector2& rhs)    { return Vector2{ lhs / rhs.x, lhs / rhs.y }; }
 inline Vector2 operator* (const Vector2& lhs, const float rhs)    { return Vector2{ lhs.x * rhs, lhs.y * rhs }; }
 inline Vector2 operator/ (const Vector2& lhs, const float rhs)    { return Vector2{ lhs.x / rhs, lhs.y / rhs }; }
+inline Vector2& operator+= (Vector2& lhs, const Vector2& rhs)     { lhs.x += rhs.x; lhs.y += rhs.y; return lhs; }
 inline float   dot(const Vector2 &lhs, const Vector2& rhs)        { return Vector2DotProduct(lhs, rhs); }
 inline float   dot_perp(const Vector2 &lhs, const Vector2 &rhs)   { return lhs.x * rhs.y - lhs.y * rhs.x; }
 inline float   length(const Vector2 &rhs)                         { return Vector2Length(rhs); }
