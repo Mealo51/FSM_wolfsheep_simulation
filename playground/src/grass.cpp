@@ -83,18 +83,18 @@ void grass::decide()
 {
 	switch (state) {
 	case GrassState::growing:
-		if (grow_progress >= 10.f) state = GrassState::grown;
+		if (grow_progress >= 600.f) state = GrassState::grown;
 		if (near_manure) state = GrassState::growing_fast;
 		break;
 	case GrassState::growing_fast:
-		if (grow_progress >= 5.f) state = GrassState::grown;
+		if (grow_progress >= 300.f) state = GrassState::grown;
 		if (!near_manure) state = GrassState::growing;
 		break;
 	case GrassState::grown:
 		
 		break;
 	case GrassState::wilting:
-		if (death_countdown >= 5.f) state = GrassState::dirt;
+		if (death_countdown >= 600.f) state = GrassState::dirt;
 		break;
 	case GrassState::dirt:
 		break;
@@ -112,7 +112,7 @@ void grass::act(float dt, App& app)
 		break;
 	case GrassState::grown:
 		grown_countdown += dt;
-		if (grown_countdown >= 10.f) {
+		if (grown_countdown >= 600.f) {
 			for (int i = 0; i < GetRandomValue(0, 3); i++)
 			{ //randomly choose 0-2 times to check spreading
 				if (GetRandomValue(0, 1000) > 800 && spread_attempts < 2) spread_attempts++;

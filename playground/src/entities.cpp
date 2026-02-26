@@ -262,8 +262,8 @@ wolf::wolf()
 	hit = false;
 	hit_cd = 0.f;
 
-	speed = 1.5f * tile_len * 0.2f ;
-	max_speed = 2.5f * tile_len * 0.2f;
+	speed = 1.5f * tile_len  ;
+	max_speed = 2.5f * tile_len ;
 	velocity = { 0,0 };
 	acceleration = { 0,0 };
 	seekweight = 1.5f;
@@ -278,6 +278,10 @@ void wolf::update(float dt, App& app)
 	decidecd +=  dt;
 	hit_cd +=  dt;
 
+	if(hunger >= 100.f) {
+		hunger = 100.f; 
+	}
+	
 	if (sensecd >= 0.2f) {
 		sense(app);
 		sensecd = 0.0f;
@@ -359,7 +363,7 @@ void wolf::decide() {
 		break;
 
 	case wolfState::attacking:
-		if (hit) state = wolfState::returning;
+		if (hunger <= 20.f) state = wolfState::returning;
 		break;
 	}
 }
@@ -367,11 +371,7 @@ void wolf::decide() {
 void wolf::act(float dt, Vector2 targetPos) {
 	acceleration += drag();
 
-	if (hit) {
-		hunger -= 100.f;
-		if (hunger < 0) hunger = 0; // Clamp to 0
-		hit = false; // Reset the flag
-	}
+
 
 	switch (state) {
 	case wolfState::sleeping:
@@ -386,6 +386,11 @@ void wolf::act(float dt, Vector2 targetPos) {
 	case wolfState::attacking:
 		hunger += 8.0f * dt ;
 		acceleration += seek(targetPos);
+		if (hit) {
+			hunger -= 100.f;
+			if (hunger < 0) hunger = 0; // Clamp to 0
+			hit = false; // Reset the flag
+		}
 		break;
 	case wolfState::returning:
 		acceleration += seek(denposition);
