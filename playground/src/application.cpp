@@ -71,6 +71,10 @@ static void check_collisions(App& app)
 		for (auto& g : app.m_grass) {
 			if (Collision::checkSheepGrass(s, g)) {
 				s.nearGrass = true;
+				if (g.state == GrassState::grown) {
+					s.eatGrass();
+					g.state = GrassState::dirt;
+				}
 			}
 		}
 		s.nearGrass = false;

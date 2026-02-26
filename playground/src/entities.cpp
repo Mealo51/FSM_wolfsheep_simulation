@@ -24,6 +24,7 @@ sheep::sheep()
 	velocity = { 0.f,0.f };
 	acceleration = { 0.f,0.f };
 	speed = 1.f * tile_len * 0.2f;
+	max_speed = 1.5f * tile_len * 0.2f;
 	fleeweight = 0.5f;
 	roamweight = 1.f;
 	dragweight = 0.1f;
@@ -34,11 +35,10 @@ void sheep::update(float dt, Vector2 wolfpos)
 	velocity += acceleration * dt;
 	position += velocity * dt;
 	checkState();
-	handleState();
+	handleState(wolfpos);
 	reproduce_cd--;
-	acceleration += roam();
-	acceleration += flee(wolfpos);
 	acceleration += drag();
+	velocity = Vector2Clamp(velocity, Vector2{ -max_speed, -max_speed }, Vector2{ max_speed, max_speed });
 }
 
 Color debugColor = {255, 0, 0, 10};
@@ -109,17 +109,17 @@ void sheep::checkState()
 	}
 }
 
-void sheep::handleState()
+void sheep::handleState(Vector2 wolfpos)
 {
 	switch (state) {
-
 	case sheepState::roaming:
-		// Logic for roaming behavior
+		acceleration += roam();
 		break;
 	case sheepState::eating:
 		eatGrass();
 		break;
 	case sheepState::fleeing:
+		acceleration += flee(wolfpos);
 		break;
 	case sheepState::reproducing:
 		reproduce();
@@ -177,7 +177,6 @@ void sheep::defecate()
 wolf::wolf()
 {
 	hunger = 0;
-	speed = 1.1f * tile_len * 0.2f;
 	detection_radius = 1.5f * tile_len ;
 	denposition = { (float)GetRandomValue(0 + static_cast<int>(wolf_radius), 1024 - static_cast<int>(wolf_radius)),
 		(float)GetRandomValue(0 + static_cast<int>(wolf_radius), 1024 - static_cast<int>(wolf_radius)) };
@@ -185,7 +184,8 @@ wolf::wolf()
 	state = wolfState::sleeping;
 	nearSheep = false;
 	hit = false;
-	
+	speed = 1.1f * tile_len * 0.2f;
+	max_speed = 1.5f * tile_len * 0.2f;
 	velocity = { 0,0 };
 	acceleration = { 0,0 };
 	seekweight = 0.5f;
@@ -196,6 +196,7 @@ wolf::wolf()
 void wolf::update(float dt, Vector2 sheeppos)
 {
 	velocity +=  acceleration * dt;
+	velocity = Vector2Clamp(velocity, Vector2{ -max_speed, -max_speed }, Vector2{ max_speed, max_speed });
 	position += velocity;
 	checkState();
 	handleState(sheeppos);

@@ -18,7 +18,7 @@ struct sheep {
 	void update(float dt, Vector2 wolfpos);
 	void render() const;
 	void checkState();
-	void handleState();
+	void handleState(Vector2 wolfpos);
 
 	sheep reproduce();
 	void eatGrass();
@@ -31,6 +31,7 @@ struct sheep {
 	float roamweight;
 	float dragweight;
 	float speed;
+	float max_speed;
 
 	float HP;
 	float fullness;
@@ -61,6 +62,7 @@ struct wolf {
 	void handleState(Vector2 sheeppos);
 
 	float speed;
+	float max_speed;
 	float roamweight;
 	float seekweight;
 	Vector2 roam();
