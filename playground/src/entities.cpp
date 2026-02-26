@@ -286,11 +286,12 @@ void wolf::handleState(Vector2 sheeppos)
 	case wolfState::roaming:
 		hunger += 5.f / 60.f; // increase hunger over time
 		acceleration += roam();
+		acceleration += seek(sheeppos);
 		break;
 	case wolfState::attacking:
-		acceleration += seek(sheeppos);
 		if (hit) {
 			hunger -= 60.f;
+			hit = false;
 		}
 		break;
 	case wolfState::sleeping:
@@ -308,9 +309,6 @@ Vector2 wolf::roam()
 Vector2 wolf::seek(Vector2 target)
 {
 	Vector2 toTarget = target - position;
-	if (Vector2Length(toTarget) > detection_radius) {
-		return { 0.f, 0.f }; // No seeking if the target is outside the detection radius
-	}
 	auto desired_velocity = Vector2Normalize(toTarget) * speed;
 	return (desired_velocity - velocity) * seekweight;
 }
