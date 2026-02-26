@@ -109,8 +109,11 @@ void sheep::sense(App& app) {
 	nearSheep = false;
 	nearGrass = false;
 
-	if (Collision::checkSheepWolf(*this, app.m_wolf)) {
+	if (Collision::searchSheepWolf(*this, app.m_wolf)) {
 		nearWolf = true;
+	}
+	if(Collision::checkSheepWolf(*this, app.m_wolf)) {
+		isAlive = false;
 	}
 
 	for (auto& g : app.m_grass) {
@@ -130,15 +133,19 @@ void sheep::sense(App& app) {
 			nearManure = true;
 		}
 	}
+
+	if (Collision::checkSheepWindow(*this, app.bounds)) {
+		position = Vector2Clamp(position, Vector2{ sheep_radius, sheep_radius },
+			Vector2{ app.bounds.x - sheep_radius, app.bounds.y - sheep_radius });
+	}
 }
 
 void sheep::decide() {
-	// This function looks at the booleans set by sense() and updates 'state'
-	// This is where your state machine logic lives.
+	if (!isAlive) state = sheepState::dead;
 	switch (state) {
 	case sheepState::roaming:
 		if (nearWolf) state = sheepState::fleeing;
-		else if (nearGrass && eat_cd >= 150.0f && !nearManure) state = sheepState::eating;
+		else if (nearGrass && !nearManure && eat_cd >= 150.0f) state = sheepState::eating;
 		break;
 	case sheepState::eating:
 		if (nearWolf) state = sheepState::fleeing;
@@ -176,7 +183,7 @@ void sheep::act(float dt, Vector2 wolfpos, Vector2 sheeppos) {
 		acceleration += cohesion(sheeppos);
 		break;
 	case sheepState::full:
-		if(defecate_cd <= 0.f) {
+		if (defecate_cd <= 0.f) {
 			defecate_cd = 600.f; //reset defecate cooldown
 			defecate();
 			fullness = 20.f;
@@ -195,9 +202,6 @@ void sheep::act(float dt, Vector2 wolfpos, Vector2 sheeppos) {
 Vector2 sheep::flee(Vector2 wolfPos)
 {
 	Vector2 toWolf = wolfPos - position;
-	if (Vector2Length(toWolf) > detection_radius) {
-		return { 0.f, 0.f }; // No fleeing if the wolf is outside the detection radius
-	}
 	auto away = Vector2Normalize(position - wolfPos);
 	auto desired_velocity = away * speed;
 	return (desired_velocity - velocity) * fleeweight;
@@ -246,7 +250,7 @@ manure sheep::defecate()
 wolf::wolf()
 {
 	hunger = 0;
-	detection_radius = 1.5f * tile_len;
+	detection_radius = 5.f * tile_len;
 	denposition = { (float)GetRandomValue(0 + static_cast<int>(wolf_radius), 1024 - static_cast<int>(wolf_radius)),
 		(float)GetRandomValue(0 + static_cast<int>(wolf_radius), 1024 - static_cast<int>(wolf_radius)) };
 	position = denposition;
@@ -256,13 +260,15 @@ wolf::wolf()
 	decidecd = 0.f;
 	nearSheep = false;
 	hit = false;
+	hit_cd = 0.f;
 
-	speed = 1.1f * tile_len * 0.2f;
-	max_speed = 1.5f * tile_len * 0.2f;
+	speed = 1.5f * tile_len * 0.2f * tick_rate;
+	max_speed = 2.5f * tile_len * 0.2f;
 	velocity = { 0,0 };
 	acceleration = { 0,0 };
 	seekweight = 1.5f;
-	roamweight = 0.6f;
+	roamweight = 1.2f;
+	dragweight = 0.2f;
 
 }
 
@@ -270,6 +276,7 @@ void wolf::update(float dt, App& app)
 {
 	sensecd += tick_rate * dt;
 	decidecd += tick_rate * dt;
+	hit_cd += tick_rate * dt;
 
 	if (sensecd >= 0.2f) {
 		sense(app);
@@ -282,7 +289,7 @@ void wolf::update(float dt, App& app)
 		decidecd = 0.0f;
 	}
 
-	Vector2 target = (app.m_sheep.empty()) ? denposition : app.m_sheep[0].position;
+	Vector2 target =  app.m_sheep[0].position;
 	act(dt, target);
 }
 
@@ -307,69 +314,86 @@ void wolf::render() const
 		DrawText("Attacking", static_cast<int>(position.x) - 20,
 			static_cast<int>(position.y) - 30, 10, BLACK);
 		break;
+	case wolfState::returning:
+		DrawText("Returning", static_cast<int>(position.x) - 20,
+			static_cast<int>(position.y) - 30, 10, BLACK);
+		break;
 	}
 }
 
-void wolf::sense(App& app) 
+void wolf::sense(App& app)
 {
 	nearSheep = false;
 	hit = false;
-	for (const auto& s : app.m_sheep) 
+	for (const auto& s : app.m_sheep)
 	{
-		if (Collision::checkWolfSheep(*this, s)) 
+		if(Collision::checkWolfSheep(*this, s))
 		{
-			nearSheep = true;
-			break; 
+			if (hit_cd >= 10.0f) { // Check if cooldown has passed
+				hit = true;
+				hit_cd = 0.f; // Reset cooldown
+			}
+			break;
 		}
+	}
+	if(Collision::checkWolfWindow(*this, app.bounds))
+	{
+		position = Vector2Clamp(position, Vector2{ wolf_radius, wolf_radius },
+			Vector2{ app.bounds.x - wolf_radius, app.bounds.y - wolf_radius });
 	}
 }
 
 void wolf::decide() {
 	switch (state) {
 	case wolfState::sleeping:
-		if (hunger >= 60.f) state = wolfState::roaming; // Wake up when hungry
+		if (hunger >= 50.f) state = wolfState::roaming; // Wake up when hungry
 		break;
 
 	case wolfState::roaming:
 		if (nearSheep) state = wolfState::attacking;
-		else if (hunger <= 10.f) state = wolfState::sleeping; // Go back to den
+		else if (hunger <= 20.f) state = wolfState::returning; // Go back to den
 		break;
 
 	case wolfState::attacking:
-		if (hunger <= 20.f || !nearSheep) state = wolfState::roaming;
+		if (hit) state = wolfState::returning;
 		break;
 	}
 }
 
 void wolf::act(float dt, Vector2 targetPos) {
-	acceleration = { 0, 0 };
+	acceleration += drag();
 
 	switch (state) {
 	case wolfState::sleeping:
-		hunger += 2.0f * dt;
+		hunger += 2.0f * dt * tick_rate;
 		velocity = { 0, 0 };
 		position = denposition;
 		break;
-
 	case wolfState::roaming:
-		hunger += 5.0f * dt;
+		hunger += 4.0f * dt * tick_rate;
 		acceleration += roam();
 		break;
-
 	case wolfState::attacking:
-		hunger += 8.0f * dt;
+		hunger += 8.0f * dt * tick_rate;
 		acceleration += seek(targetPos);
-
-		if (hit) { 
-			hunger = fmaxf(0.f, hunger - 60.f);
+		if (hit) {
+			hunger = 0.f;
 			hit = false;
+		}
+		break;
+	case wolfState::returning:
+		acceleration += seek(denposition);
+		if (Vector2Distance(position, denposition) < 5.f) {
+			state = wolfState::sleeping;
+			position = denposition;
+			velocity = { 0, 0 };
 		}
 		break;
 	}
 
-	velocity += acceleration * dt;
+	velocity += acceleration * dt * tick_rate;
 	velocity = Vector2Clamp(velocity, { -max_speed, -max_speed }, { max_speed, max_speed });
-	position += velocity * dt;
+	position += velocity * dt * tick_rate;
 }
 
 Vector2 wolf::roam()
@@ -383,4 +407,9 @@ Vector2 wolf::seek(Vector2 target)
 	Vector2 toTarget = target - position;
 	auto desired_velocity = Vector2Normalize(toTarget) * speed;
 	return (desired_velocity - velocity) * seekweight;
+}
+
+Vector2 wolf::drag()
+{
+	return -velocity * dragweight;
 }

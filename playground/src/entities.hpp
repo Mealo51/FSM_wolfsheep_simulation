@@ -12,6 +12,7 @@ enum class sheepState {
 	fleeing,
 	reproducing,
 	full,
+	dead
 };
 
 struct manure
@@ -89,11 +90,14 @@ struct wolf {
 	float max_speed;
 	float roamweight;
 	float seekweight;
+	float dragweight;
 	Vector2 roam();
 	Vector2 seek(Vector2 target);
+	Vector2 drag();
 
 	float hunger;
 	float detection_radius;
+	float hit_cd;
 	bool nearSheep;
 	bool hit;
 	wolfState state;

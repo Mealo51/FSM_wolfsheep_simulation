@@ -65,16 +65,22 @@ void App::update(float dt)
 		for (auto& s2 : m_sheep) {
 			s.update(dt, *this, m_wolf.position, s2.position);
 		}
-		if(s.state == sheepState::full) {
+		if (s.state == sheepState::full) {
 			m_manure.emplace_back(s.defecate());
 		}
-		if(s.state == sheepState::reproducing) {
+		if (s.state == sheepState::reproducing) {
 			m_sheep.emplace_back(s.reproduce());
 		}
+		m_sheep.erase(
+			std::remove_if(m_sheep.begin(), m_sheep.end(), [](const sheep& s) {
+				return s.state == sheepState::dead;
+				}),
+			m_sheep.end());
+
 	}
-	for(auto& m : m_manure) {
+	for (auto& m : m_manure) {
 		m.lifetime -= tick_rate * dt;
-		if(m.lifetime <= 0) {
+		if (m.lifetime <= 0) {
 			m = m_manure.back();
 			m_manure.pop_back();
 		}
@@ -90,7 +96,7 @@ void App::render()
 	for (auto& s : m_sheep) {
 		s.render();
 	}
-	for(auto& m : m_manure) {
+	for (auto& m : m_manure) {
 		m.render();
 	}
 	m_wolf.render();
