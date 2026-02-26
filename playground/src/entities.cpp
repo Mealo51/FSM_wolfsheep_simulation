@@ -53,11 +53,11 @@ sheep::sheep()
 
 void sheep::update(float dt, App& app, Vector2 wolfpos, Vector2 sheeppos)
 {
-	reproduce_cd -= tick_rate * dt;
-	defecate_cd -= tick_rate * dt;
-	eat_cd += tick_rate * dt;
-	sensecd += tick_rate * dt;
-	decidecd += tick_rate * dt;
+	reproduce_cd -=   dt;
+	defecate_cd -=   dt;
+	eat_cd += dt;
+	sensecd +=  dt;
+	decidecd +=  dt;
 
 	if (sensecd >= 0.25f) {
 		sense(app);
@@ -262,7 +262,7 @@ wolf::wolf()
 	hit = false;
 	hit_cd = 0.f;
 
-	speed = 1.5f * tile_len * 0.2f * tick_rate;
+	speed = 1.5f * tile_len * 0.2f ;
 	max_speed = 2.5f * tile_len * 0.2f;
 	velocity = { 0,0 };
 	acceleration = { 0,0 };
@@ -274,9 +274,9 @@ wolf::wolf()
 
 void wolf::update(float dt, App& app)
 {
-	sensecd += tick_rate * dt;
-	decidecd += tick_rate * dt;
-	hit_cd += tick_rate * dt;
+	sensecd +=  dt;
+	decidecd +=  dt;
+	hit_cd +=  dt;
 
 	if (sensecd >= 0.2f) {
 		sense(app);
@@ -289,7 +289,7 @@ void wolf::update(float dt, App& app)
 		decidecd = 0.0f;
 	}
 
-	Vector2 target =  app.m_sheep[0].position;
+	Vector2 target = (!app.m_sheep.empty()) ? app.m_sheep[0].position : denposition;
 	act(dt, target);
 }
 
@@ -367,23 +367,25 @@ void wolf::decide() {
 void wolf::act(float dt, Vector2 targetPos) {
 	acceleration += drag();
 
+	if (hit) {
+		hunger -= 100.f;
+		if (hunger < 0) hunger = 0; // Clamp to 0
+		hit = false; // Reset the flag
+	}
+
 	switch (state) {
 	case wolfState::sleeping:
-		hunger += 2.0f * dt * tick_rate;
+		hunger += 2.0f * dt ;
 		velocity = { 0, 0 };
 		position = denposition;
 		break;
 	case wolfState::roaming:
-		hunger += 4.0f * dt * tick_rate;
+		hunger += 4.0f * dt ;
 		acceleration += roam();
 		break;
 	case wolfState::attacking:
-		hunger += 8.0f * dt * tick_rate;
+		hunger += 8.0f * dt ;
 		acceleration += seek(targetPos);
-		if (hit) {
-			hunger -= 100.f;
-			hit = false;
-		}
 		break;
 	case wolfState::returning:
 		acceleration += seek(denposition);
@@ -395,9 +397,9 @@ void wolf::act(float dt, Vector2 targetPos) {
 		break;
 	}
 
-	velocity += acceleration * dt * tick_rate;
+	velocity += acceleration * dt ;
 	velocity = Vector2Clamp(velocity, { -max_speed, -max_speed }, { max_speed, max_speed });
-	position += velocity * dt * tick_rate;
+	position += velocity * dt ;
 }
 
 Vector2 wolf::roam()

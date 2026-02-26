@@ -79,7 +79,7 @@ void App::update(float dt)
 
 	}
 	for (auto& m : m_manure) {
-		m.lifetime -= tick_rate * dt;
+		m.lifetime -= dt;
 		if (m.lifetime <= 0) {
 			m = m_manure.back();
 			m_manure.pop_back();
