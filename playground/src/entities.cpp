@@ -32,30 +32,30 @@ void sheep::update(float dt)
 void sheep::render() const
 {
 	DrawCircleV(position, sheep_radius, WHITE);
-	
+
 	//debug text
 	switch (state)
 	{
-		case sheepState::roaming:
-			DrawText("Roaming", static_cast<int>(position.x) - 20,
-				static_cast<int>(position.y) - 30, 10, BLACK);
-			break;
-		case sheepState::eating:
-			DrawText("Eating", static_cast<int>(position.x) - 20,
-				static_cast<int>(position.y) - 30, 10, BLACK);
-			break;
-		case sheepState::fleeing:
-			DrawText("Fleeing", static_cast<int>(position.x) - 20,
-				static_cast<int>(position.y) - 30, 10, BLACK);
-			break;
-		case sheepState::reproducing:
-			DrawText("Reproducing", static_cast<int>(position.x) - 30,
-				static_cast<int>(position.y) - 30, 10, BLACK);
-			break;
-		case sheepState::defecating:
-			DrawText("Defecating", static_cast<int>(position.x) - 30,
-				static_cast<int>(position.y) - 30, 10, BLACK);
-			break;
+	case sheepState::roaming:
+		DrawText("Roaming", static_cast<int>(position.x) - 20,
+			static_cast<int>(position.y) - 30, 10, BLACK);
+		break;
+	case sheepState::eating:
+		DrawText("Eating", static_cast<int>(position.x) - 20,
+			static_cast<int>(position.y) - 30, 10, BLACK);
+		break;
+	case sheepState::fleeing:
+		DrawText("Fleeing", static_cast<int>(position.x) - 20,
+			static_cast<int>(position.y) - 30, 10, BLACK);
+		break;
+	case sheepState::reproducing:
+		DrawText("Reproducing", static_cast<int>(position.x) - 30,
+			static_cast<int>(position.y) - 30, 10, BLACK);
+		break;
+	case sheepState::defecating:
+		DrawText("Defecating", static_cast<int>(position.x) - 30,
+			static_cast<int>(position.y) - 30, 10, BLACK);
+		break;
 	}
 }
 
@@ -63,10 +63,10 @@ void sheep::checkState()
 {
 	switch (state) {
 	case sheepState::roaming:
-		if(checkWolf()) {
+		if (checkWolf()) {
 			state = sheepState::fleeing;
 		}
-		else if (checkSheep()&&fullness >=80 && reproduce_cd <=0.f) {
+		else if (checkSheep() && fullness >= 80 && reproduce_cd <= 0.f) {
 			state = sheepState::reproducing;
 		}
 		else if (searchGrass()) {
@@ -165,6 +165,22 @@ void wolf::update(float dt)
 void wolf::render() const
 {
 	DrawCircleV(position, wolf_radius, DARKGRAY);
+	//debug text
+	switch (state)
+	{
+	case wolfState::roaming:
+		DrawText("Roaming", static_cast<int>(position.x) - 20,
+			static_cast<int>(position.y) - 30, 10, BLACK);
+		break;
+	case wolfState::sleeping:
+		DrawText("Sleeping", static_cast<int>(position.x) - 20,
+			static_cast<int>(position.y) - 30, 10, BLACK);
+		break;
+	case wolfState::attacking:
+		DrawText("Attacking", static_cast<int>(position.x) - 20,
+			static_cast<int>(position.y) - 30, 10, BLACK);
+		break;
+	}
 }
 
 void wolf::checkState()
@@ -214,7 +230,7 @@ void wolf::handleState()
 bool wolf::checkSheep()
 {
 	return false;
-}	
+}
 
 bool wolf::attack()
 {
