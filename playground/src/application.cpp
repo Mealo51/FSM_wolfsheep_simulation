@@ -67,7 +67,6 @@ static void check_collisions(App& app)
 			}
 		}
 		s.nearSheep = false;
-
 		for (auto& g : app.m_grass) {
 			if (Collision::checkSheepGrass(s, g)) {
 				s.nearGrass = true;
@@ -96,12 +95,6 @@ static void check_collisions(App& app)
 		app.m_wolf.position = Vector2Clamp(app.m_wolf.position, Vector2{ wolf_radius, wolf_radius },
 			Vector2{ app.bounds.x - wolf_radius, app.bounds.y - wolf_radius });
 	}
-	if (app.m_wolf.position.x <= 0.f || app.m_wolf.position.x >= app.bounds.x ||
-		app.m_wolf.position.y <= 0.f || app.m_wolf.position.y >= app.bounds.y) {
-		app.m_wolf.position = Vector2Clamp(app.m_wolf.position, Vector2{ wolf_radius, wolf_radius },
-			Vector2{ app.bounds.x - wolf_radius, app.bounds.y - wolf_radius });
-	}
-
 }
 
 void App::update(float dt)
