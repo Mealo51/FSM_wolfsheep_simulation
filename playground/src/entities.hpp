@@ -15,7 +15,7 @@ enum class sheepState {
 struct sheep {
 	sheep();
 
-	void update(float dt);
+	void update(float dt, Vector2 wolfpos);
 	void render() const;
 	void checkState();
 	void handleState();
@@ -24,7 +24,7 @@ struct sheep {
 	void eatGrass();
 	void defecate();
 
-	Vector2 flee();
+	Vector2 flee(Vector2 wolfPos);
 	Vector2 roam();
 
 	float HP;

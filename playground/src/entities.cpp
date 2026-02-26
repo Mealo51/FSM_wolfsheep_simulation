@@ -24,7 +24,7 @@ sheep::sheep()
 	nearGrass = false;
 }
 
-void sheep::update(float dt)
+void sheep::update(float dt, Vector2 wolfpos)
 {
 	velocity = Vector2Add(velocity, acceleration * dt);
 	position = Vector2Add(position, velocity);
@@ -32,7 +32,7 @@ void sheep::update(float dt)
 	handleState();
 	reproduce_cd--;
 	acceleration += roam();
-	acceleration += flee();
+	acceleration += flee(wolfpos);
 }
 
 void sheep::render() const
@@ -83,13 +83,13 @@ void sheep::checkState()
 		if (nearSheep && fullness >= 80 && reproduce_cd <= 0.f) {
 			state = sheepState::reproducing;
 		}
-		else if(!nearWolf && !nearGrass)
+		else if (!nearWolf && !nearGrass)
 		{
 			state = sheepState::roaming;
 		}
 		break;
 	case sheepState::fleeing:
-		if(!nearWolf)
+		if (!nearWolf)
 		{
 			state = sheepState::roaming;
 		}
@@ -125,14 +125,16 @@ void sheep::handleState()
 
 
 //movement functions
-Vector2 sheep::flee()
+Vector2 sheep::flee(Vector2 wolfPos)
 {
-	return Vector2{ 0,0 };
+	auto away = Vector2Normalize(position - wolfPos);
+	auto desired_velocity = away * speed;
+	return (desired_velocity - velocity);
 }
 
 Vector2 sheep::roam()
 {
-	return Vector2{ speed * static_cast<float>(GetRandomValue(-1, 1)), 
+	return Vector2{ speed * static_cast<float>(GetRandomValue(-1, 1)),
 		speed * static_cast<float>(GetRandomValue(-1, 1)) };
 }
 

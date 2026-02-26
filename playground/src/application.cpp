@@ -63,7 +63,7 @@ void App::update(float dt)
 		g.update(dt);
 	}
 	for(auto& s : m_sheep) {
-		s.update(dt);
+		s.update(dt,m_wolf.position);
 	}
 	m_wolf.update(dt);
 }
