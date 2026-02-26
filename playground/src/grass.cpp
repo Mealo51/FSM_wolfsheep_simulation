@@ -18,6 +18,10 @@ grass::grass(Vector2 pos)
 	{
 		grow_progress = static_cast<float>(GetRandomValue(0, 300));
 	}
+	else
+	{
+		grow_progress = 0.f;
+	}
 	position = pos;
 	spread_indices = { -1, -1 };
 }

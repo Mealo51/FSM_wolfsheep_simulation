@@ -28,14 +28,15 @@ sheep::sheep()
 	fleeweight = 0.5f;
 	roamweight = 1.f;
 	dragweight = 0.1f;
+	cohesionweight = 0.6f;
 }
 
-void sheep::update(float dt, Vector2 wolfpos)
+void sheep::update(float dt, Vector2 wolfpos, Vector2 sheeppos)
 {
 	velocity += acceleration * dt;
 	position += velocity * dt;
 	checkState();
-	handleState(wolfpos);
+	handleState(wolfpos, sheeppos);
 	reproduce_cd--;
 	acceleration += drag();
 	velocity = Vector2Clamp(velocity, Vector2{ -max_speed, -max_speed }, Vector2{ max_speed, max_speed });
@@ -109,7 +110,7 @@ void sheep::checkState()
 	}
 }
 
-void sheep::handleState(Vector2 wolfpos)
+void sheep::handleState(Vector2 wolfpos, Vector2 sheeppos)
 {
 	switch (state) {
 	case sheepState::roaming:
@@ -122,6 +123,7 @@ void sheep::handleState(Vector2 wolfpos)
 		acceleration += flee(wolfpos);
 		break;
 	case sheepState::reproducing:
+		acceleration += cohesion(sheeppos);
 		reproduce();
 		break;
 	case sheepState::defecating:
@@ -153,6 +155,16 @@ Vector2 sheep::roam()
 Vector2 sheep::drag()
 {
 	return -velocity * dragweight;
+}
+
+Vector2 sheep::cohesion(Vector2 sheeppos)
+{
+	Vector2 toSheep = sheeppos - position;
+	if (Vector2Length(toSheep) > detection_radius) {
+		return { 0.f, 0.f }; // No cohesion if the other sheep is outside the detection radius
+	}
+	auto desired_velocity = Vector2Normalize(toSheep) * speed;
+	return (desired_velocity - velocity) * cohesionweight;
 }
 
 //action functions

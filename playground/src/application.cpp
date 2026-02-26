@@ -108,7 +108,9 @@ void App::update(float dt)
 		spread();
 	}
 	for (auto& s : m_sheep) {
-		s.update(dt, m_wolf.position);
+		for (auto& s2 : m_sheep) {
+			s.update(dt, m_wolf.position, s2.position);
+		}
 	}
 	m_wolf.update(dt, m_sheep.empty() ? Vector2{ 0.f, 0.f } : m_sheep[0].position);
 }

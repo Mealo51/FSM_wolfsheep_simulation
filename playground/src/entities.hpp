@@ -15,10 +15,10 @@ enum class sheepState {
 struct sheep {
 	sheep();
 
-	void update(float dt, Vector2 wolfpos);
+	void update(float dt, Vector2 wolfpos, Vector2 sheeppos);
 	void render() const;
 	void checkState();
-	void handleState(Vector2 wolfpos);
+	void handleState(Vector2 wolfpos, Vector2 sheeppos);
 
 	sheep reproduce();
 	void eatGrass();
@@ -27,9 +27,11 @@ struct sheep {
 	Vector2 flee(Vector2 wolfPos);
 	Vector2 roam();
 	Vector2 drag();
+	Vector2 cohesion(Vector2 sheeppos);
 	float fleeweight;
 	float roamweight;
 	float dragweight;
+	float cohesionweight;
 	float speed;
 	float max_speed;
 
