@@ -3,8 +3,10 @@
 #include "entities.hpp"
 #include "common.hpp"
 #include "Constant.hpp"
+#include "application.hpp"
+#include "collision.hpp"
 
-constexpr Color NON_COLLIDING_COLOR = LIME;
+constexpr Color NON_COLLIDING_COLOR = LIGHTGRAY;
 
 manure::manure(Vector2 pos)
 {
@@ -21,11 +23,16 @@ sheep::sheep()
 {
 	HP = 100.f;
 	fullness = 0.f;
-	reproduce_cd = 600.f;  //10 sec cooldown at 60 fps, can be modified by fullness or other factors
+	reproduce_cd = 600.f;
+	defecate_cd = 300.f;
 	detection_radius = 3.f * tile_len;
 	position = { (float)GetRandomValue(0 + static_cast<int>(sheep_radius), 1024 - static_cast<int>(sheep_radius)),
 		(float)GetRandomValue(0 + static_cast<int>(sheep_radius), 1024 - static_cast<int>(sheep_radius)) };
+
+
 	state = sheepState::roaming;
+	decidecd = 0.f;
+	sensecd = 0.f;
 	nearWolf = false;
 	nearManure = false;
 	nearSheep = false;
@@ -37,21 +44,30 @@ sheep::sheep()
 	acceleration = { 0.f,0.f };
 	speed = 1.f * tile_len * 0.2f;
 	max_speed = 1.5f * tile_len * 0.2f;
-	fleeweight = 0.5f;
-	roamweight = 1.f;
+	fleeweight = 2.f;
+	roamweight = 1.2f;
 	dragweight = 0.1f;
-	cohesionweight = 2.f;
+	cohesionweight = 1.f;
 }
 
-void sheep::update(float dt, Vector2 wolfpos, Vector2 sheeppos)
+void sheep::update(float dt, App& app, Vector2 wolfpos, Vector2 sheeppos)
 {
-	velocity += acceleration * dt;
-	position += velocity * dt;
-	checkState();
-	handleState(wolfpos, sheeppos);
 	reproduce_cd -= tick_rate * dt;
-	acceleration += drag();
-	velocity = Vector2Clamp(velocity, Vector2{ -max_speed, -max_speed }, Vector2{ max_speed, max_speed });
+	defecate_cd -= tick_rate * dt;
+	sensecd += tick_rate * dt;
+	decidecd += tick_rate * dt;
+
+	if (sensecd >= 0.25f) {
+		sense(app);
+		sensecd = 0.0f;
+	}
+
+	if (decidecd >= 0.5f) {
+		decide();
+		decidecd = 0.0f;
+	}
+
+	act(dt, wolfpos, sheeppos);
 }
 
 Color debugColor = { 255, 0, 0, 10 };
@@ -80,59 +96,67 @@ void sheep::render() const
 			static_cast<int>(position.y) - 30, 10, BLACK);
 		break;
 	case sheepState::full:
-		DrawText("Defecating", static_cast<int>(position.x) - 30,
+		DrawText("Full", static_cast<int>(position.x) - 30,
 			static_cast<int>(position.y) - 30, 10, BLACK);
 		break;
 	}
 }
 
-void sheep::checkState()
-{
+void sheep::sense(App& app) {
+	// 1. Reset flags
+	nearWolf = false;
+	nearSheep = false;
+	nearGrass = false;
+
+	// 2. Sense Wolf
+	if (Collision::checkSheepWolf(*this, app.m_wolf)) {
+		nearWolf = true;
+	}
+
+	// 3. Sense Grass (Optimization: only check tiles within detection radius)
+	for (auto& g : app.m_grass) {
+		if (Collision::checkSheepGrass(*this, g)) {
+			nearGrass = true;
+		}
+	}
+
+	// 4. Sense Other Sheep
+	for (auto& other : app.m_sheep) {
+		if (this != &other && Collision::checkSheepSheep(*this, other)) {
+			nearSheep = true;
+		}
+	}
+}
+
+void sheep::decide() {
+	// This function looks at the booleans set by sense() and updates 'state'
+	// This is where your state machine logic lives.
 	switch (state) {
 	case sheepState::roaming:
-		if (nearWolf) {
-			state = sheepState::fleeing;
-		}
-		else if (nearSheep && HP >= 80 && reproduce_cd <= 0.f) {
-			state = sheepState::reproducing;
-		}
-		else if (nearGrass) {
-			state = sheepState::eating;
-		}
+		if (nearWolf) state = sheepState::fleeing;
+		else if (nearGrass) state = sheepState::eating;
 		break;
 	case sheepState::eating:
-		if (fullness >= 100.f) {
-			state = sheepState::full;
-		}
-		if (nearSheep && HP >= 80 && reproduce_cd <= 0.f) {
-			state = sheepState::reproducing;
-		}
-		else if (!nearWolf && !nearGrass)
-		{
-			state = sheepState::roaming;
-		}
+		if (nearWolf) state = sheepState::fleeing;
+		else if (!nearGrass) state = sheepState::roaming;
+		else if (fullness >= 100.f && reproduce_cd <= 0.f) state = sheepState::reproducing;
+		else if (fullness >= 80.f) state = sheepState::full;
 		break;
 	case sheepState::fleeing:
-		if (!nearWolf)
-		{
-			state = sheepState::roaming;
-		}
+		if (!nearWolf) state = sheepState::roaming;
 		break;
 	case sheepState::reproducing:
-		if (HP < 80 || reproduce_cd > 0.f) {
-			state = sheepState::roaming;
-		}
+		if (reproduce_cd > 0.f) state = sheepState::roaming;
 		break;
 	case sheepState::full:
-		if (fullness <= 20.f) {
-			state = sheepState::roaming;
-		}
+		if (fullness <= 20.f) state = sheepState::roaming;
 		break;
 	}
 }
 
-void sheep::handleState(Vector2 wolfpos, Vector2 sheeppos)
-{
+void sheep::act(float dt, Vector2 wolfpos, Vector2 sheeppos) {
+	acceleration = drag();
+
 	switch (state) {
 	case sheepState::roaming:
 		acceleration += roam();
@@ -145,13 +169,20 @@ void sheep::handleState(Vector2 wolfpos, Vector2 sheeppos)
 		break;
 	case sheepState::reproducing:
 		acceleration += cohesion(sheeppos);
-		reproduce();
 		break;
 	case sheepState::full:
-		defecate();
+		if(defecate_cd <= 0.f) {
+			defecate_cd = 300.f; //reset defecate cooldown
+			defecate();
+			fullness = 20.f;
+		}
 		break;
 	}
 
+	//movement
+	velocity += acceleration * dt;
+	velocity = Vector2Clamp(velocity, { -max_speed, -max_speed }, { max_speed, max_speed });
+	position += velocity * dt;
 }
 
 
@@ -215,9 +246,13 @@ wolf::wolf()
 	denposition = { (float)GetRandomValue(0 + static_cast<int>(wolf_radius), 1024 - static_cast<int>(wolf_radius)),
 		(float)GetRandomValue(0 + static_cast<int>(wolf_radius), 1024 - static_cast<int>(wolf_radius)) };
 	position = denposition;
+
 	state = wolfState::sleeping;
+	sensecd = 0.f;
+	decidecd = 0.f;
 	nearSheep = false;
 	hit = false;
+
 	speed = 1.1f * tile_len * 0.2f;
 	max_speed = 1.5f * tile_len * 0.2f;
 	velocity = { 0,0 };
@@ -227,13 +262,24 @@ wolf::wolf()
 
 }
 
-void wolf::update(float dt, Vector2 sheeppos)
+void wolf::update(float dt, App& app)
 {
-	velocity += acceleration * dt;
-	velocity = Vector2Clamp(velocity, Vector2{ -max_speed, -max_speed }, Vector2{ max_speed, max_speed });
-	position += velocity;
-	checkState();
-	handleState(sheeppos);
+	sensecd += tick_rate * dt;
+	decidecd += tick_rate * dt;
+
+	if (sensecd >= 0.2f) {
+		sense(app);
+		sensecd = 0.0f;
+	}
+
+
+	if (decidecd >= 0.4f) {
+		decide();
+		decidecd = 0.0f;
+	}
+
+	Vector2 target = (app.m_sheep.empty()) ? denposition : app.m_sheep[0].position;
+	act(dt, target);
 }
 
 void wolf::render() const
@@ -260,53 +306,66 @@ void wolf::render() const
 	}
 }
 
-void wolf::checkState()
+void wolf::sense(App& app) 
 {
+	nearSheep = false;
+	hit = false;
+	for (const auto& s : app.m_sheep) 
+	{
+		if (Collision::checkWolfSheep(*this, s)) 
+		{
+			nearSheep = true;
+			break; 
+		}
+	}
+}
+
+void wolf::decide() {
 	switch (state) {
-	case wolfState::roaming:
-		if (nearSheep) {
-			state = wolfState::attacking;
-		}
-		else if (hunger <= 20.f) {
-			position = denposition; //return to den when not hungry
-			state = wolfState::sleeping;
-		}
-		break;
 	case wolfState::sleeping:
-		if (hunger >= 60.f) {
-			state = wolfState::attacking;
-		}
+		if (hunger >= 60.f) state = wolfState::roaming; // Wake up when hungry
 		break;
+
+	case wolfState::roaming:
+		if (nearSheep) state = wolfState::attacking;
+		else if (hunger <= 10.f) state = wolfState::sleeping; // Go back to den
+		break;
+
 	case wolfState::attacking:
-		if (hunger <= 20.f) {
-			state = wolfState::sleeping;
-		}
-		else if (hunger <= 50.f) {
-			state = wolfState::roaming;
-		}
+		if (hunger <= 20.f || !nearSheep) state = wolfState::roaming;
 		break;
 	}
 }
 
-void wolf::handleState(Vector2 sheeppos)
-{
+void wolf::act(float dt, Vector2 targetPos) {
+	acceleration = { 0, 0 };
+
 	switch (state) {
+	case wolfState::sleeping:
+		hunger += 2.0f * dt;
+		velocity = { 0, 0 };
+		position = denposition;
+		break;
+
 	case wolfState::roaming:
-		hunger += 5.f / 60.f; // increase hunger over time
+		hunger += 5.0f * dt;
 		acceleration += roam();
 		break;
+
 	case wolfState::attacking:
-		hunger += 6.f / 60.f; // increase hunger faster when attacking
-		acceleration += seek(sheeppos);
-		if (hit) {
-			hunger -= 60.f;
+		hunger += 8.0f * dt;
+		acceleration += seek(targetPos);
+
+		if (hit) { 
+			hunger = fmaxf(0.f, hunger - 60.f);
 			hit = false;
 		}
 		break;
-	case wolfState::sleeping:
-		hunger += 2.f / 60.f;
-		break;
 	}
+
+	velocity += acceleration * dt;
+	velocity = Vector2Clamp(velocity, { -max_speed, -max_speed }, { max_speed, max_speed });
+	position += velocity * dt;
 }
 
 Vector2 wolf::roam()

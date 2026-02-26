@@ -52,79 +52,18 @@ grass App::spread()
 	return grass(m_grass[index].position);
 }
 
-static void check_collisions(App& app)
-{
-	for (auto& s : app.m_sheep)
-	{
-		if (Collision::checkSheepWindow(s, app.bounds)) {
-			s.position = Vector2Clamp(s.position, Vector2{ sheep_radius, sheep_radius },
-				Vector2{ app.bounds.x - sheep_radius, app.bounds.y - sheep_radius });
-		}
-		for (auto& s2 : app.m_sheep) {
-			if (&s != &s2 && Collision::checkSheepSheep(s, s2)) {
-				s.nearSheep = true;
-				s2.nearSheep = true;
-				s.position = Vector2Clamp(s.position, Vector2{ sheep_radius, sheep_radius },
-					Vector2{ app.bounds.x - sheep_radius, app.bounds.y - sheep_radius });
-				s2.position = Vector2Clamp(s2.position, Vector2{ sheep_radius, sheep_radius },
-					Vector2{ app.bounds.x - sheep_radius, app.bounds.y - sheep_radius });
-			}
-		}
-		s.nearSheep = false;
-		for (auto& g : app.m_grass) {
-			if (Collision::checkSheepGrass(s, g)) {
-				s.nearGrass = true;
-				if (g.state == GrassState::grown) {
-					s.eatGrass();
-					g.state = GrassState::dirt;
-				}
-			}
-		}
-		s.nearGrass = false;
-
-		if (Collision::checkSheepWolf(s, app.m_wolf)) {
-			s.nearWolf = true;
-		}
-		s.nearWolf = false;
-		//wolf collision
-		if (Collision::checkWolfSheep(app.m_wolf, s)) {
-			app.m_wolf.nearSheep = true;
-			app.m_wolf.hit = true;
-			s.isAlive = false;
-		}
-		else {
-			app.m_wolf.nearSheep = false;
-			app.m_wolf.hit = false;
-		}
-	}
-
-	for(auto& m : app.m_manure) {
-		for(auto& g : app.m_grass) {
-			if(Collision::checkGrassManure(g, m)) {
-				g.near_manure = true;			
-			}
-		}
-	}
-
-	if (Collision::checkWolfWindow(app.m_wolf, app.bounds)) {
-		app.m_wolf.position = Vector2Clamp(app.m_wolf.position, Vector2{ wolf_radius, wolf_radius },
-			Vector2{ app.bounds.x - wolf_radius, app.bounds.y - wolf_radius });
-	}
-}
-
 void App::update(float dt)
 {
 	m_input.update();
 	constexpr float SPEED = 100.0f;
 	Vector2 direction = m_input.value("move");
-	check_collisions(*this);
 	for (auto& g : m_grass) {
 		g.update(dt);
 		spread();
 	}
 	for (auto& s : m_sheep) {
 		for (auto& s2 : m_sheep) {
-			s.update(dt, m_wolf.position, s2.position);
+			s.update(dt, *this, m_wolf.position, s2.position);
 		}
 		if(s.state == sheepState::full) {
 			m_manure.emplace_back(s.defecate());
@@ -140,7 +79,7 @@ void App::update(float dt)
 			m_manure.pop_back();
 		}
 	}
-	m_wolf.update(dt, m_sheep.empty() ? Vector2{ 0.f, 0.f } : m_sheep[0].position);
+	m_wolf.update(dt, *this);
 }
 
 void App::render()

@@ -4,6 +4,8 @@
 
 #include "raylib.h"
 
+struct App;
+
 enum class sheepState {
 	roaming,
 	eating,
@@ -23,10 +25,14 @@ struct manure
 struct sheep {
 	sheep();
 
-	void update(float dt, Vector2 wolfpos, Vector2 sheeppos);
+	void update(float dt, App& app, Vector2 wolfpos, Vector2 sheeppos);
 	void render() const;
-	void checkState();
-	void handleState(Vector2 wolfpos, Vector2 sheeppos);
+
+	void sense(App& app);
+	void decide();
+	void act(float dt, Vector2 wolfpos, Vector2 sheeppos);
+	float sensecd;
+	float decidecd;
 
 	sheep reproduce();
 	void eatGrass();
@@ -46,6 +52,7 @@ struct sheep {
 	float HP;
 	float fullness;
 	float reproduce_cd;
+	float defecate_cd;
 	float detection_radius;
 	bool nearWolf;
 	bool nearSheep;
@@ -62,15 +69,20 @@ enum class wolfState {
 	roaming,
 	attacking,
 	sleeping,
+	returning
 };
 
 struct wolf {
 	wolf();
 
-	void update(float dt, Vector2 sheeppos);
+	void update(float dt, App& app);
 	void render() const;
-	void checkState();
-	void handleState(Vector2 sheeppos);
+
+	void sense(App& app);
+	void decide();
+	void act(float dt, Vector2 sheeppos);
+	float decidecd;
+	float sensecd;
 
 	float speed;
 	float max_speed;
