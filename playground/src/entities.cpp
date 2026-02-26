@@ -11,7 +11,7 @@ sheep::sheep()
 	HP = 100.f * 60.f;
 	fullness = 0.f;
 	reproduce_cd = 600.f;  //10 sec cooldown at 60 fps, can be modified by fullness or other factors
-	detection_radius = 3.f * tile_len / 2.f;
+	detection_radius = 3.f * tile_len;
 	position = { (float)GetRandomValue(0 + static_cast<int>(sheep_radius), 1024 - static_cast<int>(sheep_radius)),
 		(float)GetRandomValue(0 + static_cast<int>(sheep_radius), 1024 - static_cast<int>(sheep_radius)) };
 	state = sheepState::roaming;
@@ -25,10 +25,10 @@ sheep::sheep()
 	acceleration = { 0.f,0.f };
 	speed = 1.f * tile_len * 0.2f;
 	min_speed = 20.f;
-	max_speed = 100.f;
-	fleeweight = 2.f;
-	roamweight = 10.f;
-	dragweight = 0.2f;
+	max_speed = 150.f;
+	fleeweight = 0.5f;
+	roamweight = 1.f;
+	dragweight = 0.1f;
 }
 
 void sheep::update(float dt, Vector2 wolfpos)
@@ -41,7 +41,7 @@ void sheep::update(float dt, Vector2 wolfpos)
 	acceleration += roam();
 	acceleration += flee(wolfpos);
 	acceleration += drag();
-	acceleration = Vector2Clamp(acceleration, Vector2{ min_speed, min_speed }, Vector2{ max_speed, max_speed });
+	//acceleration = Vector2Clamp(acceleration, Vector2{ min_speed, min_speed }, Vector2{ max_speed, max_speed });
 }
 
 Color debugColor = {255, 0, 0, 10};
@@ -138,6 +138,10 @@ void sheep::handleState()
 //movement functions
 Vector2 sheep::flee(Vector2 wolfPos)
 {
+	Vector2 toWolf = wolfPos - position;
+	if (Vector2Length(toWolf) > detection_radius) {
+		return { 0.f, 0.f }; // No fleeing if the wolf is outside the detection radius
+	}
 	auto away = Vector2Normalize(position - wolfPos);
 	auto desired_velocity = away * speed;
 	return (desired_velocity - velocity) * fleeweight;
@@ -177,7 +181,7 @@ wolf::wolf()
 {
 	hunger = 0;
 	speed = 1.5f * tile_len * 0.2f;
-	detection_radius = 1.f * tile_len / 2.f;
+	detection_radius = 1.5f * tile_len ;
 	denposition = { (float)GetRandomValue(0 + static_cast<int>(wolf_radius), 1024 - static_cast<int>(wolf_radius)),
 		(float)GetRandomValue(0 + static_cast<int>(wolf_radius), 1024 - static_cast<int>(wolf_radius)) };
 	position = denposition;
@@ -197,7 +201,10 @@ void wolf::update(float dt)
 void wolf::render() const
 {
 	DrawCircleV(position, wolf_radius, DARKGRAY);
+	DrawCircleV(position, detection_radius, debugColor);
 	//debug text
+	DrawText(TextFormat("WHunger: %.1f", hunger), 10,
+		40, 20, NON_COLLIDING_COLOR);
 	switch (state)
 	{
 	case wolfState::roaming:
