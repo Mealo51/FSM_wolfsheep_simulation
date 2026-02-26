@@ -23,4 +23,5 @@ struct App
 	wolf m_wolf;
 	std::vector<sheep> m_sheep;
 	std::vector<grass> m_grass;
+	std::vector<manure>m_manure;
 };

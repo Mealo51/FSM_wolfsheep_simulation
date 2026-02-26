@@ -9,6 +9,7 @@ constexpr Color NON_COLLIDING_COLOR = LIME;
 manure::manure(Vector2 pos)
 {
 	position = pos;
+	lifetime = 180.f;
 }
 
 void manure::render() const
@@ -18,7 +19,7 @@ void manure::render() const
 
 sheep::sheep()
 {
-	HP = 100.f * 60.f;
+	HP = 100.f ;
 	fullness = 0.f;
 	reproduce_cd = 600.f;  //10 sec cooldown at 60 fps, can be modified by fullness or other factors
 	detection_radius = 3.f * tile_len;
@@ -38,7 +39,7 @@ sheep::sheep()
 	fleeweight = 0.5f;
 	roamweight = 1.f;
 	dragweight = 0.1f;
-	cohesionweight = 0.6f;
+	cohesionweight = 2.f;
 }
 
 void sheep::update(float dt, Vector2 wolfpos, Vector2 sheeppos)
@@ -47,7 +48,7 @@ void sheep::update(float dt, Vector2 wolfpos, Vector2 sheeppos)
 	position += velocity * dt;
 	checkState();
 	handleState(wolfpos, sheeppos);
-	reproduce_cd--;
+	reproduce_cd -= tick_rate * dt;
 	acceleration += drag();
 	velocity = Vector2Clamp(velocity, Vector2{ -max_speed, -max_speed }, Vector2{ max_speed, max_speed });
 }
@@ -91,7 +92,7 @@ void sheep::checkState()
 		if (nearWolf) {
 			state = sheepState::fleeing;
 		}
-		else if (nearSheep && fullness >= 80 && reproduce_cd <= 0.f) {
+		else if (nearSheep && HP >= 80 && reproduce_cd <= 0.f) {
 			state = sheepState::reproducing;
 		}
 		else if (nearGrass) {
@@ -99,7 +100,7 @@ void sheep::checkState()
 		}
 		break;
 	case sheepState::eating:
-		if (nearSheep && fullness >= 80 && reproduce_cd <= 0.f) {
+		if (nearSheep && HP >= 80 && reproduce_cd <= 0.f) {
 			state = sheepState::reproducing;
 		}
 		else if (!nearWolf && !nearGrass)
@@ -114,7 +115,7 @@ void sheep::checkState()
 		}
 		break;
 	case sheepState::reproducing:
-		if (!nearSheep || fullness < 80 || reproduce_cd > 0.f) {
+		if ( HP < 80 || reproduce_cd > 0.f) {
 			state = sheepState::roaming;
 		}
 		break;
@@ -194,9 +195,10 @@ sheep sheep::reproduce()
 	return sheep();
 }
 
-void sheep::defecate()
+manure sheep::defecate()
 {
 	fullness = 20.f;
+	return manure(position);
 }
 
 wolf::wolf()

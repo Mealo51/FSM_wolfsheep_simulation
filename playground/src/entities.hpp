@@ -16,6 +16,7 @@ struct manure
 {
 	manure(Vector2 pos);
 	Vector2 position;
+	float lifetime;
 	void render() const;
 };
 
@@ -29,7 +30,7 @@ struct sheep {
 
 	sheep reproduce();
 	void eatGrass();
-	void defecate();
+	manure defecate();
 
 	Vector2 flee(Vector2 wolfPos);
 	Vector2 roam();

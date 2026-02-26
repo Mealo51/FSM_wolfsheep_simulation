@@ -2,6 +2,7 @@
 
 #include "application.hpp"
 #include "common.hpp"
+#include "Constant.hpp"
 #include "collision.hpp"
 #include <vector>
 
@@ -31,6 +32,7 @@ App::App(int width, int height)
 			gy += tile_len;
 		}
 	}
+	m_manure.reserve(10);
 }
 
 grass App::spread()
@@ -115,6 +117,19 @@ void App::update(float dt)
 		for (auto& s2 : m_sheep) {
 			s.update(dt, m_wolf.position, s2.position);
 		}
+		if(s.state == sheepState::full) {
+			m_manure.emplace_back(s.defecate());
+		}
+		if(s.state == sheepState::reproducing) {
+			m_sheep.emplace_back(s.reproduce());
+		}
+	}
+	for(auto& m : m_manure) {
+		m.lifetime -= tick_rate * dt;
+		if(m.lifetime <= 0) {
+			m = m_manure.back();
+			m_manure.pop_back();
+		}
 	}
 	m_wolf.update(dt, m_sheep.empty() ? Vector2{ 0.f, 0.f } : m_sheep[0].position);
 }
@@ -126,6 +141,9 @@ void App::render()
 	}
 	for (auto& s : m_sheep) {
 		s.render();
+	}
+	for(auto& m : m_manure) {
+		m.render();
 	}
 	m_wolf.render();
 }
