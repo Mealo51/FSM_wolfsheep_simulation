@@ -11,34 +11,45 @@ sheep::sheep()
 	HP = 100.f * 60.f;
 	fullness = 0.f;
 	reproduce_cd = 600.f;  //10 sec cooldown at 60 fps, can be modified by fullness or other factors
-	speed = 1.f * tile_len * 0.2f;
-	detection_radius = 4.f * tile_len;
+	detection_radius = 3.f * tile_len / 2.f;
 	position = { (float)GetRandomValue(0 + static_cast<int>(sheep_radius), 1024 - static_cast<int>(sheep_radius)),
 		(float)GetRandomValue(0 + static_cast<int>(sheep_radius), 1024 - static_cast<int>(sheep_radius)) };
-	velocity = { 0.f,0.f };
-	acceleration = { 0.f,0.f };
 	state = sheepState::roaming;
 	nearWolf = false;
 	nearManure = false;
 	nearSheep = false;
 	nearGrass = false;
+	
+	//movement
+	velocity = { 0.f,0.f };
+	acceleration = { 0.f,0.f };
+	speed = 1.f * tile_len * 0.2f;
+	min_speed = 20.f;
+	max_speed = 100.f;
+	fleeweight = 2.f;
+	roamweight = 10.f;
+	dragweight = 0.2f;
 }
 
 void sheep::update(float dt, Vector2 wolfpos)
 {
-	velocity = Vector2Add(velocity, acceleration * dt);
-	position = Vector2Add(position, velocity);
+	velocity += acceleration * dt;
+	position += velocity * dt;
 	checkState();
 	handleState();
 	reproduce_cd--;
 	acceleration += roam();
 	acceleration += flee(wolfpos);
+	acceleration += drag();
+	acceleration = Vector2Clamp(acceleration, Vector2{ min_speed, min_speed }, Vector2{ max_speed, max_speed });
 }
+
+Color debugColor = {255, 0, 0, 10};
 
 void sheep::render() const
 {
 	DrawCircleV(position, sheep_radius, WHITE);
-
+	DrawCircleV(position, detection_radius, debugColor); //debug detection radius
 	//debug text
 	switch (state)
 	{
@@ -129,15 +140,19 @@ Vector2 sheep::flee(Vector2 wolfPos)
 {
 	auto away = Vector2Normalize(position - wolfPos);
 	auto desired_velocity = away * speed;
-	return (desired_velocity - velocity);
+	return (desired_velocity - velocity) * fleeweight;
 }
 
 Vector2 sheep::roam()
 {
 	return Vector2{ speed * static_cast<float>(GetRandomValue(-1, 1)),
-		speed * static_cast<float>(GetRandomValue(-1, 1)) };
+		speed * static_cast<float>(GetRandomValue(-1, 1)) } *roamweight;
 }
 
+Vector2 sheep::drag()
+{
+	return -velocity * dragweight;
+}
 
 //action functions
 void sheep::eatGrass()
@@ -161,8 +176,8 @@ void sheep::defecate()
 wolf::wolf()
 {
 	hunger = 0;
-	speed = 1.5f * tile_len;
-	detection_radius = 2.f * tile_len;
+	speed = 1.5f * tile_len * 0.2f;
+	detection_radius = 1.f * tile_len / 2.f;
 	denposition = { (float)GetRandomValue(0 + static_cast<int>(wolf_radius), 1024 - static_cast<int>(wolf_radius)),
 		(float)GetRandomValue(0 + static_cast<int>(wolf_radius), 1024 - static_cast<int>(wolf_radius)) };
 	position = denposition;

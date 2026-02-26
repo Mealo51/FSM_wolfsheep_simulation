@@ -26,10 +26,16 @@ struct sheep {
 
 	Vector2 flee(Vector2 wolfPos);
 	Vector2 roam();
+	Vector2 drag();
+	float fleeweight;
+	float roamweight;
+	float dragweight;
+	float speed;
+	float min_speed;
+	float max_speed;
 
 	float HP;
 	float fullness;
-	float speed;
 	float reproduce_cd;
 	float detection_radius;
 	bool nearWolf;
