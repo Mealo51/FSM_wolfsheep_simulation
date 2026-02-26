@@ -335,6 +335,10 @@ void wolf::sense(App& app)
 			}
 			break;
 		}
+		if(Collision::searchWolfSheep(*this, s))
+		{
+			nearSheep = true;
+		}
 	}
 	if(Collision::checkWolfWindow(*this, app.bounds))
 	{
@@ -377,7 +381,7 @@ void wolf::act(float dt, Vector2 targetPos) {
 		hunger += 8.0f * dt * tick_rate;
 		acceleration += seek(targetPos);
 		if (hit) {
-			hunger = 0.f;
+			hunger -= 100.f;
 			hit = false;
 		}
 		break;
