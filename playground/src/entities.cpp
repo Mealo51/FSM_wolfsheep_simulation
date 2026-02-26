@@ -268,6 +268,7 @@ void wolf::checkState()
 			state = wolfState::attacking;
 		}
 		else if (hunger <= 20.f) {
+			position = denposition; //return to den when not hungry
 			state = wolfState::sleeping;
 		}
 		break;
@@ -295,6 +296,7 @@ void wolf::handleState(Vector2 sheeppos)
 		acceleration += roam();
 		break;
 	case wolfState::attacking:
+		hunger += 6.f / 60.f; // increase hunger faster when attacking
 		acceleration += seek(sheeppos);
 		if (hit) {
 			hunger -= 60.f;

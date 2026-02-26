@@ -57,8 +57,6 @@ static void check_collisions(App& app)
 	for (auto& s : app.m_sheep)
 	{
 		if (Collision::checkSheepWindow(s, app.bounds)) {
-			//keeps the sheep inside window but current roam would result in sheep getting stuck at the edge of the window, 
-			//need to implement better roaming behavior
 			s.position = Vector2Clamp(s.position, Vector2{ sheep_radius, sheep_radius },
 				Vector2{ app.bounds.x - sheep_radius, app.bounds.y - sheep_radius });
 		}
