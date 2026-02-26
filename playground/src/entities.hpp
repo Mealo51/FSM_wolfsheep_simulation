@@ -51,6 +51,7 @@ struct sheep {
 	bool nearSheep;
 	bool nearGrass;
 	bool nearManure;
+	bool isAlive;
 	sheepState state;
 	Vector2 position;
 	Vector2 velocity;

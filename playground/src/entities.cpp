@@ -30,6 +30,7 @@ sheep::sheep()
 	nearManure = false;
 	nearSheep = false;
 	nearGrass = false;
+	isAlive = true;
 	
 	//movement
 	velocity = { 0.f,0.f };
@@ -100,6 +101,9 @@ void sheep::checkState()
 		}
 		break;
 	case sheepState::eating:
+		if (fullness >= 100.f) {
+			state = sheepState::full;
+		}
 		if (nearSheep && HP >= 80 && reproduce_cd <= 0.f) {
 			state = sheepState::reproducing;
 		}
@@ -120,6 +124,9 @@ void sheep::checkState()
 		}
 		break;
 	case sheepState::full:
+		if(fullness <= 20.f) {
+			state = sheepState::roaming;
+		}
 		break;
 	}
 }
@@ -215,8 +222,8 @@ wolf::wolf()
 	max_speed = 1.5f * tile_len * 0.2f;
 	velocity = { 0,0 };
 	acceleration = { 0,0 };
-	seekweight = 0.5f;
-	roamweight = 1.f;
+	seekweight = 1.5f;
+	roamweight = 0.6f;
 
 }
 

@@ -92,6 +92,7 @@ static void check_collisions(App& app)
 		if (Collision::checkWolfSheep(app.m_wolf, s)) {
 			app.m_wolf.nearSheep = true;
 			app.m_wolf.hit = true;
+			s.isAlive = false;
 		}
 		else {
 			app.m_wolf.nearSheep = false;
