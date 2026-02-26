@@ -5,6 +5,8 @@
 #include "Constant.hpp"
 #include <array>
 
+struct App;
+
 enum class GrassState {
 	growing,
 	growing_fast,
@@ -20,6 +22,12 @@ struct grass {
 	void render() const;
 	void checkState();
 	void handleState();
+
+	void sense(App& app);
+	void decide();
+	void act(float dt, App& app);
+	float sensecd;
+	float decidecd;
 
 	float growth_rate;
 	float grow_progress;

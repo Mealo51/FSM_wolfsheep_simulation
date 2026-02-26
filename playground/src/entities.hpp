@@ -53,6 +53,7 @@ struct sheep {
 	float fullness;
 	float reproduce_cd;
 	float defecate_cd;
+	float eat_cd;
 	float detection_radius;
 	bool nearWolf;
 	bool nearSheep;

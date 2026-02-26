@@ -28,7 +28,12 @@ namespace Collision
 
 	bool checkGrassManure(const grass& g, const manure& m)
 	{
-		return CheckCollisionCircles(g.position, tile_len / 2, m.position, 5.f);
+		return CheckCollisionCircles(g.position, tile_len * 2, m.position, 5.f);
+	}
+
+	bool checkSheepManure(const sheep& s, const manure& m)
+	{
+		return CheckCollisionCircles(s.position, sheep_radius, m.position, 5.f);
 	}
 
 	bool checkSheepWindow(const sheep& s, const Vector2& bounds)

@@ -23,8 +23,9 @@ sheep::sheep()
 {
 	HP = 100.f;
 	fullness = 0.f;
+	eat_cd = 0.f;
 	reproduce_cd = 600.f;
-	defecate_cd = 300.f;
+	defecate_cd = 600.f;
 	detection_radius = 3.f * tile_len;
 	position = { (float)GetRandomValue(0 + static_cast<int>(sheep_radius), 1024 - static_cast<int>(sheep_radius)),
 		(float)GetRandomValue(0 + static_cast<int>(sheep_radius), 1024 - static_cast<int>(sheep_radius)) };
@@ -54,6 +55,7 @@ void sheep::update(float dt, App& app, Vector2 wolfpos, Vector2 sheeppos)
 {
 	reproduce_cd -= tick_rate * dt;
 	defecate_cd -= tick_rate * dt;
+	eat_cd += tick_rate * dt;
 	sensecd += tick_rate * dt;
 	decidecd += tick_rate * dt;
 
@@ -103,27 +105,29 @@ void sheep::render() const
 }
 
 void sheep::sense(App& app) {
-	// 1. Reset flags
 	nearWolf = false;
 	nearSheep = false;
 	nearGrass = false;
 
-	// 2. Sense Wolf
 	if (Collision::checkSheepWolf(*this, app.m_wolf)) {
 		nearWolf = true;
 	}
 
-	// 3. Sense Grass (Optimization: only check tiles within detection radius)
 	for (auto& g : app.m_grass) {
 		if (Collision::checkSheepGrass(*this, g)) {
 			nearGrass = true;
 		}
 	}
 
-	// 4. Sense Other Sheep
 	for (auto& other : app.m_sheep) {
 		if (this != &other && Collision::checkSheepSheep(*this, other)) {
 			nearSheep = true;
+		}
+	}
+
+	for (auto& m : app.m_manure) {
+		if (Collision::checkSheepManure(*this, m)) {
+			nearManure = true;
 		}
 	}
 }
@@ -134,7 +138,7 @@ void sheep::decide() {
 	switch (state) {
 	case sheepState::roaming:
 		if (nearWolf) state = sheepState::fleeing;
-		else if (nearGrass) state = sheepState::eating;
+		else if (nearGrass && eat_cd >= 300.0f && !nearManure) state = sheepState::eating;
 		break;
 	case sheepState::eating:
 		if (nearWolf) state = sheepState::fleeing;
@@ -149,7 +153,7 @@ void sheep::decide() {
 		if (reproduce_cd > 0.f) state = sheepState::roaming;
 		break;
 	case sheepState::full:
-		if (fullness <= 20.f) state = sheepState::roaming;
+		if (fullness <= 20.f || nearManure) state = sheepState::roaming;
 		break;
 	}
 }
@@ -163,6 +167,7 @@ void sheep::act(float dt, Vector2 wolfpos, Vector2 sheeppos) {
 		break;
 	case sheepState::eating:
 		eatGrass();
+		eat_cd = 0.f; // reset eat cooldown
 		break;
 	case sheepState::fleeing:
 		acceleration += flee(wolfpos);
@@ -172,7 +177,7 @@ void sheep::act(float dt, Vector2 wolfpos, Vector2 sheeppos) {
 		break;
 	case sheepState::full:
 		if(defecate_cd <= 0.f) {
-			defecate_cd = 300.f; //reset defecate cooldown
+			defecate_cd = 600.f; //reset defecate cooldown
 			defecate();
 			fullness = 20.f;
 		}
@@ -235,7 +240,6 @@ sheep sheep::reproduce()
 
 manure sheep::defecate()
 {
-	fullness = 20.f;
 	return manure(position);
 }
 

@@ -4,6 +4,7 @@
 #include "common.hpp"
 #include "Constant.hpp"
 #include "grass.hpp"
+#include "application.hpp"
 
 grass::grass(Vector2 pos)
 {
