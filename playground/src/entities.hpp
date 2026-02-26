@@ -21,8 +21,6 @@ struct sheep {
 	void handleState();
 
 	bool checkWolf();
-	bool checkSheep();
-	bool searchGrass();
 	sheep reproduce();
 	void eatGrass();
 	void defecate();
@@ -32,6 +30,9 @@ struct sheep {
 	float speed;
 	float reproduce_cd;
 	float detection_radius;
+	bool nearSheep;
+	bool nearGrass;
+	bool nearManure;
 	sheepState state;
 	Vector2 position;
 	Vector2 velocity;

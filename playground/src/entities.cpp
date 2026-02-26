@@ -18,6 +18,9 @@ sheep::sheep()
 	velocity = { 0.f,0.f };
 	acceleration = { 0.f,0.f };
 	state = sheepState::roaming;
+	nearManure = false;
+	nearSheep = false;
+	nearGrass = false;
 }
 
 void sheep::update(float dt)
@@ -66,10 +69,10 @@ void sheep::checkState()
 		if (checkWolf()) {
 			state = sheepState::fleeing;
 		}
-		else if (checkSheep() && fullness >= 80 && reproduce_cd <= 0.f) {
+		else if (nearSheep && fullness >= 80 && reproduce_cd <= 0.f) {
 			state = sheepState::reproducing;
 		}
-		else if (searchGrass()) {
+		else if (nearGrass) {
 			state = sheepState::eating;
 		}
 		else
@@ -78,10 +81,19 @@ void sheep::checkState()
 		}
 		break;
 	case sheepState::eating:
-		eatGrass();
+		if (nearSheep && fullness >= 80 && reproduce_cd <= 0.f) {
+			state = sheepState::reproducing;
+		}
+		else if(!checkWolf() && !nearGrass)
+		{
+			state = sheepState::roaming;
+		}
 		break;
 	case sheepState::fleeing:
-		checkWolf();
+		if(!checkWolf())
+		{
+			state = sheepState::roaming;
+		}
 		break;
 	case sheepState::reproducing:
 		break;
@@ -98,6 +110,7 @@ void sheep::handleState()
 		// Logic for roaming behavior
 		break;
 	case sheepState::eating:
+		eatGrass();
 		break;
 	case sheepState::fleeing:
 		break;
@@ -111,23 +124,15 @@ void sheep::handleState()
 
 }
 
-bool sheep::checkSheep()
-{
-	return false;
-}
-
 bool sheep::checkWolf()
-{
-	return false;
-}
-
-bool sheep::searchGrass()
 {
 	return false;
 }
 
 void sheep::eatGrass()
 {
+	fullness += 25.f;
+	HP += 20.f;
 }
 
 sheep sheep::reproduce()
@@ -139,6 +144,7 @@ sheep sheep::reproduce()
 
 void sheep::defecate()
 {
+	fullness = 20.f;
 }
 
 wolf::wolf()

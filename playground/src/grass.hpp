@@ -2,6 +2,7 @@
 #pragma once
 
 #include "raylib.h"
+#include "Constant.hpp"
 #include <array>
 
 enum class GrassState {

@@ -44,6 +44,12 @@ static void check_collisions(App& app)
 			s.position = Vector2Clamp(s.position, Vector2{ sheep_radius, sheep_radius },
 				Vector2{ app.bounds.x - sheep_radius, app.bounds.y - sheep_radius });
 		}
+		for(auto& s2 : app.m_sheep) {
+			if (&s != &s2 && Collision::checkSheepSheep(s, s2)) {
+				s.nearSheep = true;
+				s2.nearSheep = true;
+			}
+		}
 	}
 }
 

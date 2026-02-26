@@ -8,12 +8,22 @@ namespace Collision
 {
 	bool checkSheepWolf(const sheep& s, const wolf& w)
 	{
-		return CheckCollisionCircles(s.position, sheep_radius, w.position, wolf_radius);
+		return CheckCollisionCircles(s.position, s.detection_radius, w.position, wolf_radius);
+	}
+
+	bool checkWolfSheep(const sheep& s, const wolf& w)
+	{
+		return CheckCollisionCircles(s.position, sheep_radius, w.position, w.detection_radius);
 	}
 
 	bool checkSheepSheep(const sheep& s1, const sheep& s2)
 	{
-		return CheckCollisionCircles(s1.position, sheep_radius, s2.position, sheep_radius);
+		return CheckCollisionCircles(s1.position, s1.detection_radius, s2.position, s2.detection_radius);
+	}
+
+	bool checkSheepGrass(const sheep& s, const grass& g)
+	{
+		return CheckCollisionCircles(s.position, s.detection_radius, g.position, tile_len / 2);
 	}
 
 	bool checkSheepWindow(const sheep& s, const Vector2& bounds)
