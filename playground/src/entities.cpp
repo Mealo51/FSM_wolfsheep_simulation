@@ -6,6 +6,16 @@
 
 constexpr Color NON_COLLIDING_COLOR = LIME;
 
+manure::manure(Vector2 pos)
+{
+	position = pos;
+}
+
+void manure::render() const
+{
+	DrawCircleV(position, 5.f, BROWN);
+}
+
 sheep::sheep()
 {
 	HP = 100.f * 60.f;
@@ -67,7 +77,7 @@ void sheep::render() const
 		DrawText("Reproducing", static_cast<int>(position.x) - 30,
 			static_cast<int>(position.y) - 30, 10, BLACK);
 		break;
-	case sheepState::defecating:
+	case sheepState::full:
 		DrawText("Defecating", static_cast<int>(position.x) - 30,
 			static_cast<int>(position.y) - 30, 10, BLACK);
 		break;
@@ -104,8 +114,11 @@ void sheep::checkState()
 		}
 		break;
 	case sheepState::reproducing:
+		if (!nearSheep || fullness < 80 || reproduce_cd > 0.f) {
+			state = sheepState::roaming;
+		}
 		break;
-	case sheepState::defecating:
+	case sheepState::full:
 		break;
 	}
 }
@@ -126,7 +139,7 @@ void sheep::handleState(Vector2 wolfpos, Vector2 sheeppos)
 		acceleration += cohesion(sheeppos);
 		reproduce();
 		break;
-	case sheepState::defecating:
+	case sheepState::full:
 		defecate();
 		break;
 	}

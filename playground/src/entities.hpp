@@ -9,7 +9,14 @@ enum class sheepState {
 	eating,
 	fleeing,
 	reproducing,
-	defecating,
+	full,
+};
+
+struct manure
+{
+	manure(Vector2 pos);
+	Vector2 position;
+	void render() const;
 };
 
 struct sheep {
