@@ -19,7 +19,7 @@ void manure::render() const
 
 sheep::sheep()
 {
-	HP = 100.f ;
+	HP = 100.f;
 	fullness = 0.f;
 	reproduce_cd = 600.f;  //10 sec cooldown at 60 fps, can be modified by fullness or other factors
 	detection_radius = 3.f * tile_len;
@@ -31,7 +31,7 @@ sheep::sheep()
 	nearSheep = false;
 	nearGrass = false;
 	isAlive = true;
-	
+
 	//movement
 	velocity = { 0.f,0.f };
 	acceleration = { 0.f,0.f };
@@ -54,7 +54,7 @@ void sheep::update(float dt, Vector2 wolfpos, Vector2 sheeppos)
 	velocity = Vector2Clamp(velocity, Vector2{ -max_speed, -max_speed }, Vector2{ max_speed, max_speed });
 }
 
-Color debugColor = {255, 0, 0, 10};
+Color debugColor = { 255, 0, 0, 10 };
 
 void sheep::render() const
 {
@@ -119,12 +119,12 @@ void sheep::checkState()
 		}
 		break;
 	case sheepState::reproducing:
-		if ( HP < 80 || reproduce_cd > 0.f) {
+		if (HP < 80 || reproduce_cd > 0.f) {
 			state = sheepState::roaming;
 		}
 		break;
 	case sheepState::full:
-		if(fullness <= 20.f) {
+		if (fullness <= 20.f) {
 			state = sheepState::roaming;
 		}
 		break;
@@ -211,7 +211,7 @@ manure sheep::defecate()
 wolf::wolf()
 {
 	hunger = 0;
-	detection_radius = 1.5f * tile_len ;
+	detection_radius = 1.5f * tile_len;
 	denposition = { (float)GetRandomValue(0 + static_cast<int>(wolf_radius), 1024 - static_cast<int>(wolf_radius)),
 		(float)GetRandomValue(0 + static_cast<int>(wolf_radius), 1024 - static_cast<int>(wolf_radius)) };
 	position = denposition;
@@ -229,7 +229,7 @@ wolf::wolf()
 
 void wolf::update(float dt, Vector2 sheeppos)
 {
-	velocity +=  acceleration * dt;
+	velocity += acceleration * dt;
 	velocity = Vector2Clamp(velocity, Vector2{ -max_speed, -max_speed }, Vector2{ max_speed, max_speed });
 	position += velocity;
 	checkState();
@@ -273,14 +273,14 @@ void wolf::checkState()
 		break;
 	case wolfState::sleeping:
 		if (hunger >= 60.f) {
-			state = wolfState::roaming;
+			state = wolfState::attacking;
 		}
 		break;
 	case wolfState::attacking:
 		if (hunger <= 20.f) {
 			state = wolfState::sleeping;
 		}
-		else if (hunger >= 20.f) {
+		else if (hunger <= 50.f) {
 			state = wolfState::roaming;
 		}
 		break;
@@ -293,9 +293,9 @@ void wolf::handleState(Vector2 sheeppos)
 	case wolfState::roaming:
 		hunger += 5.f / 60.f; // increase hunger over time
 		acceleration += roam();
-		acceleration += seek(sheeppos);
 		break;
 	case wolfState::attacking:
+		acceleration += seek(sheeppos);
 		if (hit) {
 			hunger -= 60.f;
 			hit = false;
@@ -310,7 +310,7 @@ void wolf::handleState(Vector2 sheeppos)
 Vector2 wolf::roam()
 {
 	return Vector2{ speed * static_cast<float>(GetRandomValue(-1, 1)),
-		speed * static_cast<float>(GetRandomValue(-1, 1)) } * roamweight;
+		speed * static_cast<float>(GetRandomValue(-1, 1)) } *roamweight;
 }
 
 Vector2 wolf::seek(Vector2 target)

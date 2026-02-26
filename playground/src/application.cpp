@@ -100,6 +100,14 @@ static void check_collisions(App& app)
 		}
 	}
 
+	for(auto& m : app.m_manure) {
+		for(auto& g : app.m_grass) {
+			if(Collision::checkGrassManure(g, m)) {
+				g.near_manure = true;			
+			}
+		}
+	}
+
 	if (Collision::checkWolfWindow(app.m_wolf, app.bounds)) {
 		app.m_wolf.position = Vector2Clamp(app.m_wolf.position, Vector2{ wolf_radius, wolf_radius },
 			Vector2{ app.bounds.x - wolf_radius, app.bounds.y - wolf_radius });

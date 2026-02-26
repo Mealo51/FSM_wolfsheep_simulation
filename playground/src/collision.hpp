@@ -12,6 +12,7 @@ namespace Collision
 	bool checkWolfSheep(const wolf& w, const sheep& s);
 	bool checkSheepSheep(const sheep& s1, const sheep& s2);
 	bool checkSheepGrass(const sheep& s, const grass& g);
+	bool checkGrassManure(const grass& g, const manure& m);
 	bool checkSheepWindow(const sheep& s, const Vector2& bounds);
 	bool checkWolfWindow(const wolf& w, const Vector2& bounds);
 } // !Collision
