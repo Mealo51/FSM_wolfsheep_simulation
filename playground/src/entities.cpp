@@ -77,7 +77,7 @@ Color debugColor = { 255, 0, 0, 10 };
 void sheep::render() const
 {
 	DrawCircleV(position, sheep_radius, WHITE);
-	DrawCircleV(position, detection_radius, debugColor); //debug detection radius
+	DrawCircleV(position, detection_radius, debugColor); //detection radius debug drawing
 	//debug text
 	switch (state)
 	{
@@ -138,7 +138,7 @@ void sheep::decide() {
 	switch (state) {
 	case sheepState::roaming:
 		if (nearWolf) state = sheepState::fleeing;
-		else if (nearGrass && eat_cd >= 300.0f && !nearManure) state = sheepState::eating;
+		else if (nearGrass && eat_cd >= 150.0f && !nearManure) state = sheepState::eating;
 		break;
 	case sheepState::eating:
 		if (nearWolf) state = sheepState::fleeing;

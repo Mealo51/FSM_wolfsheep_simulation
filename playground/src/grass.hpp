@@ -18,10 +18,8 @@ enum class GrassState {
 struct grass {
 	grass(Vector2 pos);
 
-	void update(float dt);
+	void update(float dt, App& app);
 	void render() const;
-	void checkState();
-	void handleState();
 
 	void sense(App& app);
 	void decide();

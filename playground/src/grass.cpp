@@ -5,6 +5,7 @@
 #include "Constant.hpp"
 #include "grass.hpp"
 #include "application.hpp"
+#include "collision.hpp"
 
 grass::grass(Vector2 pos)
 {
@@ -25,12 +26,24 @@ grass::grass(Vector2 pos)
 	}
 	position = pos;
 	spread_indices = { -1, -1 };
+
+	sensecd = 0.f;
+	decidecd = 0.f;
 }
 
-void grass::update(float dt)
+void grass::update(float dt, App& app)
 {
-	checkState();
-	handleState();
+	sensecd += tick_rate * dt;
+	decidecd += tick_rate * dt;
+	if (sensecd >= 0.25f) {
+		sensecd = 0.f;
+		sense(app);
+	}
+	if (decidecd >= 0.5f) {
+		decidecd = 0.f;
+		decide();
+	}
+	act(dt, app);
 }
 
 void grass::render() const
@@ -55,52 +68,60 @@ void grass::render() const
 }
 
 
-void grass::handleState()
+void grass::sense(App& app)
+{
+	near_manure = false;
+	for (const auto& m : app.m_manure) {
+		if (Collision::checkGrassManure(*this, m)) {
+			near_manure = true;
+			break;
+		}
+	}
+}
+
+void grass::decide()
 {
 	switch (state) {
 	case GrassState::growing:
-		grow_progress += growth_rate;
+		if (grow_progress >= 600.f) state = GrassState::grown;
+		if (near_manure) state = GrassState::growing_fast;
 		break;
 	case GrassState::growing_fast:
-		grow_progress += growth_rate * 2.f;
-		break;
-	case GrassState::wilting:
-		death_countdown += tick_rate; // after 10sec world should delete this grass tile
-		if (death_countdown >= 600.f) state = GrassState::dirt;
+		if (grow_progress >= 300.f) state = GrassState::grown;
+		if (!near_manure) state = GrassState::growing;
 		break;
 	case GrassState::grown:
-		grown_countdown += tick_rate; // after 10sec grass should start wilting
-		if (grown_countdown >= 600.f)
-		{
-			state = GrassState::wilting;
-		}
+		
+		break;
+	case GrassState::wilting:
+		if (death_countdown >= 600.f) state = GrassState::dirt;
 		break;
 	case GrassState::dirt:
-		// do nothing, this tile is just dirt
 		break;
 	}
 }
 
-void grass::checkState() {
+void grass::act(float dt, App& app)
+{
 	switch (state) {
 	case GrassState::growing:
-		if (grow_progress >= 600.0f) state = GrassState::grown;
-		if (near_manure) state = GrassState::growing_fast;
+		grow_progress += growth_rate; // Grows 1.0 unit per second
 		break;
 	case GrassState::growing_fast:
-		if (grow_progress >= 300.0f) state = GrassState::grown;
-		if (!near_manure) state = GrassState::growing;
+		grow_progress += growth_rate * 2.0f; // Manure doubles growth speed
 		break;
 	case GrassState::grown:
-		if (grown_countdown >= 600.0f)
-		{
-			// A grown tile might randomly decide to spread
+		grown_countdown += dt;
+		if (grown_countdown >= 600.f) {
 			for (int i = 0; i < GetRandomValue(0, 3); i++)
 			{ //randomly choose 0-2 times to check spreading
 				if (GetRandomValue(0, 1000) > 800 && spread_attempts < 2) spread_attempts++;
-				DrawText(TextFormat("Spread attempts: %d", spread_attempts), 10, 10, 20, BLACK);
 			}
 		}
+		break;
+
+	case GrassState::wilting:
+		death_countdown += dt;
 		break;
 	}
 }
