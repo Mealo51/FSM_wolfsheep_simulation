@@ -24,8 +24,6 @@ sheep::sheep()
 	velocity = { 0.f,0.f };
 	acceleration = { 0.f,0.f };
 	speed = 1.f * tile_len * 0.2f;
-	min_speed = 20.f;
-	max_speed = 150.f;
 	fleeweight = 0.5f;
 	roamweight = 1.f;
 	dragweight = 0.1f;
@@ -41,7 +39,6 @@ void sheep::update(float dt, Vector2 wolfpos)
 	acceleration += roam();
 	acceleration += flee(wolfpos);
 	acceleration += drag();
-	//acceleration = Vector2Clamp(acceleration, Vector2{ min_speed, min_speed }, Vector2{ max_speed, max_speed });
 }
 
 Color debugColor = {255, 0, 0, 10};
@@ -180,22 +177,28 @@ void sheep::defecate()
 wolf::wolf()
 {
 	hunger = 0;
-	speed = 1.5f * tile_len * 0.2f;
+	speed = 1.1f * tile_len * 0.2f;
 	detection_radius = 1.5f * tile_len ;
 	denposition = { (float)GetRandomValue(0 + static_cast<int>(wolf_radius), 1024 - static_cast<int>(wolf_radius)),
 		(float)GetRandomValue(0 + static_cast<int>(wolf_radius), 1024 - static_cast<int>(wolf_radius)) };
 	position = denposition;
+	state = wolfState::sleeping;
+	nearSheep = false;
+	hit = false;
+	
 	velocity = { 0,0 };
 	acceleration = { 0,0 };
-	state = wolfState::sleeping;
+	seekweight = 0.5f;
+	roamweight = 1.f;
+
 }
 
-void wolf::update(float dt)
+void wolf::update(float dt, Vector2 sheeppos)
 {
-	velocity = Vector2Add(velocity, acceleration * dt);
-	position = Vector2Add(position, velocity);
+	velocity +=  acceleration * dt;
+	position += velocity;
 	checkState();
-	handleState();
+	handleState(sheeppos);
 }
 
 void wolf::render() const
@@ -226,7 +229,7 @@ void wolf::checkState()
 {
 	switch (state) {
 	case wolfState::roaming:
-		if (checkSheep()) {
+		if (nearSheep) {
 			state = wolfState::attacking;
 		}
 		else if (hunger <= 20.f) {
@@ -249,29 +252,37 @@ void wolf::checkState()
 	}
 }
 
-void wolf::handleState()
+void wolf::handleState(Vector2 sheeppos)
 {
 	switch (state) {
 	case wolfState::roaming:
 		hunger += 5.f / 60.f; // increase hunger over time
+		acceleration += roam();
 		break;
 	case wolfState::attacking:
-		if (attack()) {
+		acceleration += seek(sheeppos);
+		if (hit) {
 			hunger -= 60.f;
 		}
 		break;
 	case wolfState::sleeping:
-		hunger += 5.f / 60.f;
+		hunger += 2.f / 60.f;
 		break;
 	}
 }
 
-bool wolf::checkSheep()
+Vector2 wolf::roam()
 {
-	return false;
+	return Vector2{ speed * static_cast<float>(GetRandomValue(-1, 1)),
+		speed * static_cast<float>(GetRandomValue(-1, 1)) } * roamweight;
 }
 
-bool wolf::attack()
+Vector2 wolf::seek(Vector2 target)
 {
-	return false;
+	Vector2 toTarget = target - position;
+	if (Vector2Length(toTarget) > detection_radius) {
+		return { 0.f, 0.f }; // No seeking if the target is outside the detection radius
+	}
+	auto desired_velocity = Vector2Normalize(toTarget) * speed;
+	return (desired_velocity - velocity) * seekweight;
 }

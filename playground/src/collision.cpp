@@ -11,9 +11,9 @@ namespace Collision
 		return CheckCollisionCircles(s.position, s.detection_radius, w.position, wolf_radius);
 	}
 
-	bool checkWolfSheep(const sheep& s, const wolf& w)
+	bool checkWolfSheep(const wolf& w, const sheep& s)
 	{
-		return CheckCollisionCircles(s.position, sheep_radius, w.position, w.detection_radius);
+		return CheckCollisionCircles(w.position, w.detection_radius, s.position, sheep_radius);
 	}
 
 	bool checkSheepSheep(const sheep& s1, const sheep& s2)
@@ -30,5 +30,11 @@ namespace Collision
 	{
 		return (s.position.x - sheep_radius < 0 || s.position.x + sheep_radius > bounds.x ||
 			s.position.y - sheep_radius < 0 || s.position.y + sheep_radius > bounds.y);
+	}
+
+	bool checkWolfWindow(const wolf& w, const Vector2& bounds)
+	{
+		return (w.position.x - wolf_radius < 0 || w.position.x + wolf_radius > bounds.x ||
+			w.position.y - wolf_radius < 0 || w.position.y + wolf_radius > bounds.y);
 	}
 } // !Collision

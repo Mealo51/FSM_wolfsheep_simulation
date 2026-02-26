@@ -8,13 +8,16 @@
 grass::grass(Vector2 pos)
 {
 	growth_rate = 1.f * tick_rate; //default growth rate, can be modified by manure
-	grow_progress = 0.f;
 	death_countdown = 0.f;
 	grown_countdown = 0.f;
 	spread_attempts = 0;
 	near_manure = false;
 	state = GetRandomValue(0, 9) <= 5 ? GrassState::growing :
 		GetRandomValue(0, 9) <= 3 ? GrassState::grown : GrassState::wilting;
+	if (state == GrassState::growing)
+	{
+		grow_progress = static_cast<float>(GetRandomValue(0, 300));
+	}
 	position = pos;
 	spread_indices = { -1, -1 };
 }

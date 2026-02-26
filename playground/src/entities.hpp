@@ -31,8 +31,6 @@ struct sheep {
 	float roamweight;
 	float dragweight;
 	float speed;
-	float min_speed;
-	float max_speed;
 
 	float HP;
 	float fullness;
@@ -57,18 +55,21 @@ enum class wolfState {
 struct wolf {
 	wolf();
 
-	void update(float dt);
+	void update(float dt, Vector2 sheeppos);
 	void render() const;
 	void checkState();
-	void handleState();
+	void handleState(Vector2 sheeppos);
 
-	bool checkSheep();
-	bool attack();
-
+	float speed;
+	float roamweight;
+	float seekweight;
+	Vector2 roam();
+	Vector2 seek(Vector2 target);
 
 	float hunger;
-	float speed;
 	float detection_radius;
+	bool nearSheep;
+	bool hit;
 	wolfState state;
 	Vector2 position;
 	Vector2 velocity;
