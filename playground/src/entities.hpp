@@ -27,12 +27,12 @@ struct manure
 struct sheep {
 	sheep();
 
-	void update(float dt, App& app, Vector2 wolfpos, Vector2 sheeppos);
+	void update(float dt, App& app, Vector2 wolfpos);
 	void render() const;
 
 	void sense(App& app);
 	void decide();
-	void act(float dt, App& app,Vector2 wolfpos, Vector2 sheeppos);
+	void act(float dt, App& app,Vector2 wolfpos);
 	float sensecd;
 	float decidecd;
 
@@ -43,10 +43,14 @@ struct sheep {
 	Vector2 roam();
 	Vector2 drag();
 	Vector2 cohesion();
+	Vector2 avoidmanure(Vector2 manurePos);
+	Vector2 avoidWalls();
 	float fleeweight;
 	float roamweight;
 	float dragweight;
 	float cohesionweight;
+	float avoidmanureweight;
+	float avoidwallsweight;
 	float speed;
 	float max_speed;
 
@@ -98,7 +102,6 @@ struct wolf {
 	Vector2 roam();
 	Vector2 seek(Vector2 target);
 	Vector2 drag();
-	sheep* targetSheep = nullptr;
 
 	float hunger;
 	float detection_radius;
@@ -107,6 +110,7 @@ struct wolf {
 	bool hit;
 	wolfState state;
 	Vector2 position;
+	Vector2	targetsheeppos;
 	Vector2 velocity;
 	Vector2 acceleration;
 	Vector2 denposition;

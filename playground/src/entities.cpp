@@ -55,9 +55,11 @@ sheep::sheep()
 	roamweight = 1.8f;
 	dragweight = 0.1f;
 	cohesionweight = 1.f;
+	avoidmanureweight = 2.f;
+	avoidwallsweight = 3.f;
 }
 
-void sheep::update(float dt, App& app, Vector2 wolfpos, Vector2 sheeppos)
+void sheep::update(float dt, App& app, Vector2 wolfpos)
 {
 	reproduce_cd -= dt;
 	defecate_cd -= dt;
@@ -75,7 +77,7 @@ void sheep::update(float dt, App& app, Vector2 wolfpos, Vector2 sheeppos)
 		decidecd = 0.0f;
 	}
 
-	act(dt, app, wolfpos, sheeppos);
+	act(dt, app, wolfpos);
 }
 
 Color debugColor = { 255, 0, 0, 10 };
@@ -195,12 +197,16 @@ void sheep::decide() {
 	}
 }
 
-void sheep::act(float dt, App& app, Vector2 wolfpos, Vector2 sheeppos) {
+void sheep::act(float dt, App& app, Vector2 wolfpos) {
 	acceleration = drag();
 
 	switch (state) {
 	case sheepState::roaming:
 		acceleration += roam();
+		for(auto& m : app.m_manure) {
+			acceleration += avoidmanure(m.position);
+		}
+		acceleration += avoidWalls();
 		break;
 	case sheepState::eating:
 		velocity = { 0.f, 0.f }; // stop moving while eating
@@ -219,6 +225,7 @@ void sheep::act(float dt, App& app, Vector2 wolfpos, Vector2 sheeppos) {
 		break;
 	case sheepState::fleeing:
 		acceleration += flee(wolfpos);
+		acceleration += avoidWalls();
 		break;
 	case sheepState::reproducing:
 		acceleration += cohesion();
@@ -273,6 +280,40 @@ Vector2 sheep::cohesion()
 	return (desired_velocity - velocity) * cohesionweight;
 }
 
+Vector2 sheep::avoidmanure(Vector2 manurePos)
+{
+	Vector2 toManure = manurePos - position;
+	if(Vector2Length(toManure) > detection_radius) {
+		return { 0.f, 0.f }; // No avoidance if the manure is outside the detection radius
+	}
+	auto away = Vector2Normalize(position - manurePos);
+	auto desired_velocity = away * speed;
+	return (desired_velocity - velocity) * avoidmanureweight;
+}
+
+Vector2 sheep::avoidWalls()
+{
+	float margin = 50.0f; // Distance from wall to start turning
+	Vector2 desired = { 0, 0 };
+
+	// If too far left, desire to go right
+	if (position.x < margin) desired.x = speed;
+	// If too far right, desire to go left
+	else if (position.x > 1024 - margin) desired.x = -speed;
+
+	// If too far top, desire to go down
+	if (position.y < margin) desired.y = speed;
+	// If too far bottom, desire to go up
+	else if (position.y > 1024 - margin) desired.y = -speed;
+
+	if (desired.x != 0 || desired.y != 0) {
+		desired = Vector2Normalize(desired) * speed;
+		return (desired - velocity) * avoidwallsweight; // Return the steering force
+	}
+
+	return { 0, 0 };
+}
+
 //action functions
 sheep sheep::reproduce()
 {
@@ -304,7 +345,7 @@ wolf::wolf()
 	nearSheep = false;
 	hit = false;
 	hit_cd = 0.f;
-	targetSheep = nullptr;
+	targetsheeppos = { 0,0 };
 
 	speed = 1.5f * tile_len;
 	max_speed = 4.f * tile_len;
@@ -337,8 +378,8 @@ void wolf::update(float dt, App& app)
 		decidecd = 0.0f;
 	}
 
-	Vector2 target = (!app.m_sheep.empty()) ? app.m_sheep[0].position : denposition;
-	act(dt, target);
+	Vector2 currentMoveTarget = (nearSheep) ? targetsheeppos : denposition;
+    act(dt, currentMoveTarget);
 }
 
 void wolf::render() const
@@ -373,29 +414,27 @@ void wolf::sense(App& app)
 {
 	nearSheep = false;
 	hit = false;
-	targetSheep = nullptr;
 	float closestDist = detection_radius;
 
 	for (auto& s : app.m_sheep)
 	{
 		float dist = Vector2Distance(position, s.position);
+
+		// Find closest sheep within radius
 		if (dist < closestDist) {
 			closestDist = dist;
-			targetSheep = &s; // Lock onto this sheep
-		}
-		if (targetSheep != nullptr) {
+			targetsheeppos = s.position;
 			nearSheep = true;
 		}
-		else {
-			nearSheep = false;
-		}
+
+		// eat sheep
 		if (Collision::checkWolfSheep(*this, s))
 		{
-			if (hit_cd >= 10.0f) { // Check if cooldown has passed
+			if (hit_cd >= 10.0f) {
 				hit = true;
-				hit_cd = 0.f; // Reset cooldown
+				hit_cd = 0.f;
+				s.isAlive = false;
 			}
-			break;
 		}
 	}
 	if (Collision::checkWolfWindow(*this, app.bounds))

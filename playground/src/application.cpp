@@ -62,7 +62,7 @@ void App::update(float dt)
 	spread();
 	for (auto& s : m_sheep) {
 
-		s.update(dt, *this, m_wolf.position, { 0,0 });
+		s.update(dt, *this, m_wolf.position);
 
 		if (s.state == sheepState::reproducing) {
 			m_sheep.emplace_back(s.reproduce());
