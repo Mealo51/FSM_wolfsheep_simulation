@@ -36,7 +36,6 @@ struct sheep {
 	float decidecd;
 
 	sheep reproduce();
-	void eatGrass();
 	manure defecate();
 
 	Vector2 flee(Vector2 wolfPos);
