@@ -5,6 +5,7 @@
 #include "raylib.h"
 
 struct App;
+struct grass;
 
 enum class sheepState {
 	roaming,
@@ -31,7 +32,7 @@ struct sheep {
 
 	void sense(App& app);
 	void decide();
-	void act(float dt, Vector2 wolfpos, Vector2 sheeppos);
+	void act(float dt, App& app,Vector2 wolfpos, Vector2 sheeppos);
 	float sensecd;
 	float decidecd;
 
@@ -61,6 +62,7 @@ struct sheep {
 	bool eating;
 	bool nearManure;
 	bool isAlive;
+	grass* targetGrass;
 	sheepState state;
 	Vector2 position;
 	Vector2 velocity;

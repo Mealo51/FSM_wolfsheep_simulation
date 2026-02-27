@@ -62,9 +62,6 @@ void App::update(float dt)
 
 		s.update(dt, *this, m_wolf.position, { 0,0 });
 
-		if (s.state == sheepState::full) {
-			m_manure.emplace_back(s.defecate());
-		}
 		if (s.state == sheepState::reproducing) {
 			m_sheep.emplace_back(s.reproduce());
 			s.state = sheepState::roaming;

@@ -5,6 +5,7 @@
 #include "Constant.hpp"
 #include "application.hpp"
 #include "collision.hpp"
+#include "grass.hpp"
 
 constexpr Color NON_COLLIDING_COLOR = LIGHTGRAY;
 
@@ -42,6 +43,7 @@ sheep::sheep()
 	nearGrass = false;
 	eating = false;
 	isAlive = true;
+	targetGrass = nullptr;
 
 	//movement
 	velocity = { 0.f,0.f };
@@ -72,7 +74,7 @@ void sheep::update(float dt, App& app, Vector2 wolfpos, Vector2 sheeppos)
 		decidecd = 0.0f;
 	}
 
-	act(dt, wolfpos, sheeppos);
+	act(dt, app, wolfpos, sheeppos);
 }
 
 Color debugColor = { 255, 0, 0, 10 };
@@ -124,9 +126,15 @@ void sheep::sense(App& app) {
 	}
 
 	for (auto& g : app.m_grass) {
-		if (Collision::checkSheepGrass(*this, g)) {
-			nearGrass = true;
-			eating = true;
+		// CHECK: Is the grass actually GROWN?
+		if (g.state == GrassState::grown) {
+			if (Collision::checkSheepGrass(*this, g)) {
+				nearGrass = true;
+				// Optional: Store a pointer to this specific grass 
+				// so the sheep knows WHICH one to turn back to dirt
+				targetGrass = &g;
+				break; // Found food, stop looking
+			}
 		}
 	}
 
@@ -162,6 +170,9 @@ void sheep::decide() {
 	case sheepState::eating:
 		if (nearWolf) state = sheepState::fleeing;
 		else if (!nearGrass) state = sheepState::roaming;
+		else if (targetGrass == nullptr || targetGrass->state != GrassState::grown) {
+			state = sheepState::roaming;
+		}
 		else if (fullness >= 100.f) state = sheepState::full;
 		else if (fullness >= 80.f && reproduce_cd <= 0.f) state = sheepState::reproducing;
 		break;
@@ -177,7 +188,7 @@ void sheep::decide() {
 	}
 }
 
-void sheep::act(float dt, Vector2 wolfpos, Vector2 sheeppos) {
+void sheep::act(float dt, App& app, Vector2 wolfpos, Vector2 sheeppos) {
 	acceleration = drag();
 
 	switch (state) {
@@ -190,6 +201,14 @@ void sheep::act(float dt, Vector2 wolfpos, Vector2 sheeppos) {
 		HP += 5.f * dt;	
 		eat_cd = 0.f; // reset eat cooldown
 		eating = false;
+		// Once the sheep is full enough, the grass is "eaten"
+		if (fullness >= 100.f) {
+			if (targetGrass != nullptr) {
+				targetGrass->state = GrassState::dirt; // Grass is gone!
+				targetGrass->grow_progress = 0.f;       // Reset growth timer
+			}
+			state = sheepState::full;
+		}
 		break;
 	case sheepState::fleeing:
 		acceleration += flee(wolfpos);
@@ -201,7 +220,7 @@ void sheep::act(float dt, Vector2 wolfpos, Vector2 sheeppos) {
 	case sheepState::full:
 		if (defecate_cd <= 0.f) {
 			defecate_cd = 10.f; //reset defecate cooldown
-			defecate();
+			app.m_manure.emplace_back(defecate());
 			fullness = 20.f;
 		}
 		break;
@@ -389,6 +408,12 @@ void wolf::act(float dt, Vector2 targetPos) {
 	acceleration = { 0,0 };
 	acceleration += drag();
 
+	if (hit) {
+		hunger = 100.f;
+		if (hunger < 0) hunger = 0; // Clamp to 0
+		hit = false; // Reset the flag
+	}
+
 	switch (state) {
 	case wolfState::sleeping:
 		hunger += 10.0f * dt;
@@ -402,11 +427,6 @@ void wolf::act(float dt, Vector2 targetPos) {
 	case wolfState::attacking:
 		hunger += 20.0f * dt;
 		acceleration += seek(targetPos);
-		if (hit) {
-			hunger = 100.f;
-			if (hunger < 0) hunger = 0; // Clamp to 0
-			hit = false; // Reset the flag
-		}
 		break;
 	case wolfState::returning:
 		acceleration += seek(denposition);
