@@ -25,9 +25,14 @@ namespace Collision
 		return CheckCollisionCircles(w.position, wolf_radius, s.position, sheep_radius);
 	}
 
+	bool searchSheepSheep(const sheep& s1, const sheep& s2)
+	{
+		return CheckCollisionCircles(s1.position, s1.detection_radius, s2.position, sheep_radius);
+	}
+
 	bool checkSheepSheep(const sheep& s1, const sheep& s2)
 	{
-		return CheckCollisionCircles(s1.position, s1.detection_radius, s2.position, s2.detection_radius);
+		return CheckCollisionCircles(s1.position, sheep_radius + 0.25f, s2.position, sheep_radius + 0.25f);
 	}
 
 	bool checkSheepGrass(const sheep& s, const grass& g)

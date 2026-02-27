@@ -15,8 +15,8 @@ App::App(int width, int height)
 	gy = 0.f;
 
 	//sheep initialization
-	m_sheep.reserve(10);
-	for (int i = 0; i < 10; i++)
+	m_sheep.reserve(6);
+	for (int i = 0; i < 6; i++)
 	{
 		m_sheep.emplace_back(sheep());
 	}
@@ -54,22 +54,20 @@ grass App::spread()
 
 void App::update(float dt)
 {
-	m_input.update();
-	constexpr float SPEED = 100.0f;
-	Vector2 direction = m_input.value("move");
 	for (auto& g : m_grass) {
 		g.update(dt, *this);
 		spread();
 	}
 	for (auto& s : m_sheep) {
-		for (auto& s2 : m_sheep) {
-			s.update(dt, *this, m_wolf.position, s2.position);
-		}
+
+		s.update(dt, *this, m_wolf.position, { 0,0 });
+
 		if (s.state == sheepState::full) {
 			m_manure.emplace_back(s.defecate());
 		}
 		if (s.state == sheepState::reproducing) {
 			m_sheep.emplace_back(s.reproduce());
+			s.state = sheepState::roaming;
 		}
 		m_sheep.erase(
 			std::remove_if(m_sheep.begin(), m_sheep.end(), [](const sheep& s) {

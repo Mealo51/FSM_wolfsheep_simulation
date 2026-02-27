@@ -26,8 +26,8 @@ sheep::sheep()
 	HP = 100.f;
 	fullness = 0.f;
 	eat_cd = 0.f;
-	reproduce_cd = 600.f;
-	defecate_cd = 600.f;
+	reproduce_cd = 120.f;
+	defecate_cd = 120.f;
 	detection_radius = 3.f * tile_len;
 	position = { (float)GetRandomValue(0 + static_cast<int>(sheep_radius), 1024 - static_cast<int>(sheep_radius)),
 		(float)GetRandomValue(0 + static_cast<int>(sheep_radius), 1024 - static_cast<int>(sheep_radius)) };
@@ -46,10 +46,10 @@ sheep::sheep()
 	//movement
 	velocity = { 0.f,0.f };
 	acceleration = { 0.f,0.f };
-	speed = 1.f * tile_len * 0.2f;
-	max_speed = 1.5f * tile_len * 0.2f;
-	fleeweight = 2.f;
-	roamweight = 1.2f;
+	speed = 1.f * tile_len;
+	max_speed = 1.5f * tile_len ;
+	fleeweight = 3.f;
+	roamweight = 1.8f;
 	dragweight = 0.1f;
 	cohesionweight = 1.f;
 }
@@ -156,13 +156,14 @@ void sheep::decide() {
 	switch (state) {
 	case sheepState::roaming:
 		if (nearWolf) state = sheepState::fleeing;
-		else if (nearGrass && !nearManure && eat_cd >= 2.0f ) state = sheepState::eating;
+		else if (nearGrass && !nearManure && eat_cd >= 5.0f ) state = sheepState::eating;
+		else if (fullness >= 80.f && reproduce_cd <= 0.f) state = sheepState::reproducing;
 		break;
 	case sheepState::eating:
 		if (nearWolf) state = sheepState::fleeing;
 		else if (!nearGrass) state = sheepState::roaming;
 		else if (fullness >= 100.f) state = sheepState::full;
-		else if (fullness >= 100.f && reproduce_cd <= 0.f) state = sheepState::reproducing;
+		else if (fullness >= 80.f && reproduce_cd <= 0.f) state = sheepState::reproducing;
 		break;
 	case sheepState::fleeing:
 		if (!nearWolf) state = sheepState::roaming;
@@ -185,7 +186,7 @@ void sheep::act(float dt, Vector2 wolfpos, Vector2 sheeppos) {
 		break;
 	case sheepState::eating:
 		velocity = { 0.f, 0.f }; // stop moving while eating
-		fullness += 10.f * dt;
+		fullness += 5.f * dt;
 		HP += 5.f * dt;	
 		eat_cd = 0.f; // reset eat cooldown
 		eating = false;
@@ -195,6 +196,7 @@ void sheep::act(float dt, Vector2 wolfpos, Vector2 sheeppos) {
 		break;
 	case sheepState::reproducing:
 		acceleration += cohesion(sheeppos);
+		reproduce_cd = 30.f; //reset reproduce cooldown
 		break;
 	case sheepState::full:
 		if (defecate_cd <= 0.f) {
@@ -250,7 +252,9 @@ sheep sheep::reproduce()
 {
 	reproduce_cd = 10.f; //reset reproduce cooldown
 	HP -= 30.f;
-	return sheep();
+	sheep offspring;
+	offspring.position = position; // Start offspring at parent's position
+	return offspring;
 }
 
 manure sheep::defecate()
@@ -276,12 +280,12 @@ wolf::wolf()
 	hit_cd = 0.f;
 
 	speed = 1.5f * tile_len;
-	max_speed = 2.5f * tile_len;
+	max_speed = 4.f * tile_len;
 	velocity = { 0,0 };
 	acceleration = { 0,0 };
-	seekweight = 1.5f;
-	roamweight = 1.2f;
-	dragweight = 0.2f;
+	seekweight = 2.f;
+	roamweight = 3.f;
+	dragweight = 0.1f;
 
 }
 
@@ -295,13 +299,13 @@ void wolf::update(float dt, App& app)
 		hunger = 100.f;
 	}
 
-	if (sensecd >= 0.2f) {
+	if (sensecd >= 0.25f) {
 		sense(app);
 		sensecd = 0.0f;
 	}
 
 
-	if (decidecd >= 0.4f) {
+	if (decidecd >= 0.5f) {
 		decide();
 		decidecd = 0.0f;
 	}
@@ -367,7 +371,7 @@ void wolf::sense(App& app)
 void wolf::decide() {
 	switch (state) {
 	case wolfState::sleeping:
-		if (hunger >= 50.f) state = wolfState::roaming; // Wake up when hungry
+		if (hunger >= 40.f) state = wolfState::roaming; // Wake up when hungry
 		break;
 
 	case wolfState::roaming:
@@ -387,19 +391,19 @@ void wolf::act(float dt, Vector2 targetPos) {
 
 	switch (state) {
 	case wolfState::sleeping:
-		hunger += 2.0f * dt;
+		hunger += 10.0f * dt;
 		velocity = { 0, 0 };
 		position = denposition;
 		break;
 	case wolfState::roaming:
-		hunger += 4.0f * dt;
+		hunger += 20.0f * dt;
 		acceleration += roam();
 		break;
 	case wolfState::attacking:
-		hunger += 8.0f * dt;
+		hunger += 20.0f * dt;
 		acceleration += seek(targetPos);
 		if (hit) {
-			hunger -= 100.f;
+			hunger = 100.f;
 			if (hunger < 0) hunger = 0; // Clamp to 0
 			hit = false; // Reset the flag
 		}
