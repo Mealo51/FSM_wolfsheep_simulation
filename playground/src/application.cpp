@@ -54,25 +54,27 @@ grass App::spread()
 
 void App::update(float dt)
 {
+	m_wolf.update(dt, *this);
+
 	for (auto& g : m_grass) {
 		g.update(dt, *this);
-		spread();
 	}
+	spread();
 	for (auto& s : m_sheep) {
 
 		s.update(dt, *this, m_wolf.position, { 0,0 });
 
 		if (s.state == sheepState::reproducing) {
 			m_sheep.emplace_back(s.reproduce());
+			s.mateposition = { 0,0 };
 			s.state = sheepState::roaming;
 		}
-		m_sheep.erase(
-			std::remove_if(m_sheep.begin(), m_sheep.end(), [](const sheep& s) {
-				return s.state == sheepState::dead;
-				}),
-			m_sheep.end());
-
 	}
+	m_sheep.erase(
+		std::remove_if(m_sheep.begin(), m_sheep.end(), [](const sheep& s) {
+			return s.state == sheepState::dead;
+			}),
+		m_sheep.end());
 	for (auto& m : m_manure) {
 		m.lifetime -= dt;
 		if (m.lifetime <= 0) {
@@ -80,7 +82,6 @@ void App::update(float dt)
 			m_manure.pop_back();
 		}
 	}
-	m_wolf.update(dt, *this);
 }
 
 void App::render()

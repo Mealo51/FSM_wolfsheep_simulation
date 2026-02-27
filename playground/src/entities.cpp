@@ -27,12 +27,12 @@ sheep::sheep()
 	HP = 100.f;
 	fullness = 0.f;
 	eat_cd = 0.f;
-	reproduce_cd = 120.f;
-	defecate_cd = 120.f;
+	reproduce_cd = 60.f;
+	defecate_cd = 0.f;
 	detection_radius = 3.f * tile_len;
 	position = { (float)GetRandomValue(0 + static_cast<int>(sheep_radius), 1024 - static_cast<int>(sheep_radius)),
 		(float)GetRandomValue(0 + static_cast<int>(sheep_radius), 1024 - static_cast<int>(sheep_radius)) };
-
+	mateposition = { 0,0 };
 
 	state = sheepState::roaming;
 	decidecd = 0.f;
@@ -40,6 +40,7 @@ sheep::sheep()
 	nearWolf = false;
 	nearManure = false;
 	nearSheep = false;
+	canMate = false;
 	nearGrass = false;
 	eating = false;
 	isAlive = true;
@@ -49,7 +50,7 @@ sheep::sheep()
 	velocity = { 0.f,0.f };
 	acceleration = { 0.f,0.f };
 	speed = 1.f * tile_len;
-	max_speed = 1.5f * tile_len ;
+	max_speed = 1.5f * tile_len;
 	fleeweight = 3.f;
 	roamweight = 1.8f;
 	dragweight = 0.1f;
@@ -117,6 +118,7 @@ void sheep::sense(App& app) {
 	nearSheep = false;
 	nearGrass = false;
 	eating = false;
+	canMate = false;
 
 	if (Collision::searchSheepWolf(*this, app.m_wolf)) {
 		nearWolf = true;
@@ -141,6 +143,11 @@ void sheep::sense(App& app) {
 	for (auto& other : app.m_sheep) {
 		if (this != &other && Collision::checkSheepSheep(*this, other)) {
 			nearSheep = true;
+			// Check if the other sheep is also full and ready
+			if (other.fullness >= 80.f && other.reproduce_cd <= 0.f) {
+				canMate = true;
+				mateposition = other.position; 
+			}
 		}
 	}
 
@@ -164,7 +171,7 @@ void sheep::decide() {
 	switch (state) {
 	case sheepState::roaming:
 		if (nearWolf) state = sheepState::fleeing;
-		else if (nearGrass && !nearManure && eat_cd >= 5.0f ) state = sheepState::eating;
+		else if (nearGrass && !nearManure && eat_cd >= 5.0f) state = sheepState::eating;
 		else if (fullness >= 80.f && reproduce_cd <= 0.f) state = sheepState::reproducing;
 		break;
 	case sheepState::eating:
@@ -197,12 +204,12 @@ void sheep::act(float dt, App& app, Vector2 wolfpos, Vector2 sheeppos) {
 		break;
 	case sheepState::eating:
 		velocity = { 0.f, 0.f }; // stop moving while eating
-		fullness += 5.f * dt;
-		HP += 5.f * dt;	
-		eat_cd = 0.f; // reset eat cooldown
+		fullness += 10.f * dt;
+		HP += 5.f * dt;
 		eating = false;
 		// Once the sheep is full enough, the grass is "eaten"
 		if (fullness >= 100.f) {
+			eat_cd = 0.f; // reset eat cooldown
 			if (targetGrass != nullptr) {
 				targetGrass->state = GrassState::dirt; // Grass is gone!
 				targetGrass->grow_progress = 0.f;       // Reset growth timer
@@ -214,8 +221,8 @@ void sheep::act(float dt, App& app, Vector2 wolfpos, Vector2 sheeppos) {
 		acceleration += flee(wolfpos);
 		break;
 	case sheepState::reproducing:
-		acceleration += cohesion(sheeppos);
-		reproduce_cd = 30.f; //reset reproduce cooldown
+		acceleration += cohesion();
+		reproduce_cd = 60.f; //reset reproduce cooldown
 		break;
 	case sheepState::full:
 		if (defecate_cd <= 0.f) {
@@ -256,9 +263,9 @@ Vector2 sheep::drag()
 	return -velocity * dragweight;
 }
 
-Vector2 sheep::cohesion(Vector2 sheeppos)
+Vector2 sheep::cohesion()
 {
-	Vector2 toSheep = sheeppos - position;
+	Vector2 toSheep = mateposition - position;
 	if (Vector2Length(toSheep) > detection_radius) {
 		return { 0.f, 0.f }; // No cohesion if the other sheep is outside the detection radius
 	}
@@ -297,6 +304,7 @@ wolf::wolf()
 	nearSheep = false;
 	hit = false;
 	hit_cd = 0.f;
+	targetSheep = nullptr;
 
 	speed = 1.5f * tile_len;
 	max_speed = 4.f * tile_len;
@@ -365,8 +373,22 @@ void wolf::sense(App& app)
 {
 	nearSheep = false;
 	hit = false;
-	for (const auto& s : app.m_sheep)
+	targetSheep = nullptr;
+	float closestDist = detection_radius;
+
+	for (auto& s : app.m_sheep)
 	{
+		float dist = Vector2Distance(position, s.position);
+		if (dist < closestDist) {
+			closestDist = dist;
+			targetSheep = &s; // Lock onto this sheep
+		}
+		if (targetSheep != nullptr) {
+			nearSheep = true;
+		}
+		else {
+			nearSheep = false;
+		}
 		if (Collision::checkWolfSheep(*this, s))
 		{
 			if (hit_cd >= 10.0f) { // Check if cooldown has passed
@@ -374,10 +396,6 @@ void wolf::sense(App& app)
 				hit_cd = 0.f; // Reset cooldown
 			}
 			break;
-		}
-		if (Collision::searchWolfSheep(*this, s))
-		{
-			nearSheep = true;
 		}
 	}
 	if (Collision::checkWolfWindow(*this, app.bounds))
@@ -409,7 +427,7 @@ void wolf::act(float dt, Vector2 targetPos) {
 	acceleration += drag();
 
 	if (hit) {
-		hunger = 100.f;
+		hunger -= 100.f;
 		if (hunger < 0) hunger = 0; // Clamp to 0
 		hit = false; // Reset the flag
 	}

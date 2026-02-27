@@ -18,7 +18,7 @@ grass::grass(Vector2 pos)
 		GetRandomValue(0, 9) <= 3 ? GrassState::grown : GrassState::wilting;
 	if (state == GrassState::growing)
 	{
-		grow_progress = static_cast<float>(GetRandomValue(0, 300));
+		grow_progress = static_cast<float>(GetRandomValue(0, 20));
 	}
 	else
 	{
@@ -52,7 +52,7 @@ void grass::render() const
 	case GrassState::growing:
 	case GrassState::growing_fast:
 		DrawRectangleV(position, bounds, GREEN);
-		DrawText(TextFormat("Growth: %.1f%%", grow_progress / 600.f * 100.f),
+		DrawText(TextFormat("Growth: %.1f%%", grow_progress * 60.f / 10.f),
 			static_cast<int>(position.x) + 5, static_cast<int>(position.y) + 5, 10, BLACK);
 		break;
 	case GrassState::grown:
@@ -89,18 +89,18 @@ void grass::decide()
 {
 	switch (state) {
 	case GrassState::growing:
-		if (grow_progress >= 600.f) state = GrassState::grown;
+		if (grow_progress >= 10.f) state = GrassState::grown;
 		if (near_manure) state = GrassState::growing_fast;
 		break;
 	case GrassState::growing_fast:
-		if (grow_progress >= 300.f) state = GrassState::grown;
+		if (grow_progress >= 5.f) state = GrassState::grown;
 		if (!near_manure) state = GrassState::growing;
 		break;
 	case GrassState::grown:
-		
+		if (grown_countdown >= 20.f) state = GrassState::wilting;
 		break;
 	case GrassState::wilting:
-		if (death_countdown >= 600.f) state = GrassState::dirt;
+		if (death_countdown >= 10.f) state = GrassState::dirt;
 		break;
 	case GrassState::dirt:
 		break;
@@ -111,14 +111,14 @@ void grass::act(float dt, App& app)
 {
 	switch (state) {
 	case GrassState::growing:
-		grow_progress += growth_rate; // Grows 1.0 unit per second
+		grow_progress += growth_rate * dt; // Grows 1.0 unit per second
 		break;
 	case GrassState::growing_fast:
 		grow_progress += growth_rate * 2.0f; // Manure doubles growth speed
 		break;
 	case GrassState::grown:
 		grown_countdown += dt;
-		if (grown_countdown >= 600.f) {
+		if (grown_countdown >= 10.f) {
 			for (int i = 0; i < GetRandomValue(0, 3); i++)
 			{ //randomly choose 0-2 times to check spreading
 				if (GetRandomValue(0, 1000) > 800 && spread_attempts < 2) spread_attempts++;

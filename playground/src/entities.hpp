@@ -42,7 +42,7 @@ struct sheep {
 	Vector2 flee(Vector2 wolfPos);
 	Vector2 roam();
 	Vector2 drag();
-	Vector2 cohesion(Vector2 sheeppos);
+	Vector2 cohesion();
 	float fleeweight;
 	float roamweight;
 	float dragweight;
@@ -58,12 +58,14 @@ struct sheep {
 	float detection_radius;
 	bool nearWolf;
 	bool nearSheep;
+	bool canMate;
 	bool nearGrass;
 	bool eating;
 	bool nearManure;
 	bool isAlive;
 	grass* targetGrass;
 	sheepState state;
+	Vector2 mateposition;
 	Vector2 position;
 	Vector2 velocity;
 	Vector2 acceleration;
@@ -96,6 +98,7 @@ struct wolf {
 	Vector2 roam();
 	Vector2 seek(Vector2 target);
 	Vector2 drag();
+	sheep* targetSheep = nullptr;
 
 	float hunger;
 	float detection_radius;
