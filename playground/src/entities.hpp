@@ -58,6 +58,7 @@ struct sheep {
 	bool nearWolf;
 	bool nearSheep;
 	bool nearGrass;
+	bool eating;
 	bool nearManure;
 	bool isAlive;
 	sheepState state;

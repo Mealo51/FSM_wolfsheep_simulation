@@ -77,6 +77,12 @@ void grass::sense(App& app)
 			break;
 		}
 	}
+	for(auto& s : app.m_sheep) {
+		if (Collision::checkSheepGrass(s, *this) && s.eating && state == GrassState::grown) {
+			state = GrassState::dirt;
+			break;
+		}
+	}
 }
 
 void grass::decide()

@@ -40,6 +40,7 @@ sheep::sheep()
 	nearManure = false;
 	nearSheep = false;
 	nearGrass = false;
+	eating = false;
 	isAlive = true;
 
 	//movement
@@ -79,8 +80,11 @@ Color debugColor = { 255, 0, 0, 10 };
 void sheep::render() const
 {
 	DrawCircleV(position, sheep_radius, WHITE);
-	DrawCircleV(position, detection_radius, debugColor); //detection radius debug drawing
-	//debug text
+	//debug drawing
+	DrawCircleV(position, detection_radius, debugColor); //detection radius
+	DrawText(TextFormat("fullness: %.1f", fullness), static_cast<int>(position.x) - 30,
+		static_cast<int>(position.y) - 40, 10, BLACK);
+
 	switch (state)
 	{
 	case sheepState::roaming:
@@ -110,6 +114,7 @@ void sheep::sense(App& app) {
 	nearWolf = false;
 	nearSheep = false;
 	nearGrass = false;
+	eating = false;
 
 	if (Collision::searchSheepWolf(*this, app.m_wolf)) {
 		nearWolf = true;
@@ -121,6 +126,7 @@ void sheep::sense(App& app) {
 	for (auto& g : app.m_grass) {
 		if (Collision::checkSheepGrass(*this, g)) {
 			nearGrass = true;
+			eating = true;
 		}
 	}
 
@@ -178,9 +184,11 @@ void sheep::act(float dt, Vector2 wolfpos, Vector2 sheeppos) {
 		acceleration += roam();
 		break;
 	case sheepState::eating:
+		velocity = { 0.f, 0.f }; // stop moving while eating
 		fullness += 10.f * dt;
 		HP += 5.f * dt;	
 		eat_cd = 0.f; // reset eat cooldown
+		eating = false;
 		break;
 	case sheepState::fleeing:
 		acceleration += flee(wolfpos);
