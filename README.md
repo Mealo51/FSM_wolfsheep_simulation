@@ -10,6 +10,6 @@ The grass is randomly generated (growing/grown/wilting (haven't add dirt to the 
 The sheep reproduce after reaching >80 fullness/hunger and when there's sheep nearby (also no wolf nearby), and defecate once it's full, leaving manure on the ground.
 The wolf will wake up once the hunger reaches 40 (keeps increasing while sleeping and roaming/attacking, not when returning to den), and hitting (colliding) with the sheep kills the sheep and feeds the wolf hunger.
 
-collaborators: Matej Cossic
+collaborators: Matej Cossic - discussed on impelmentation ways and SDA pattern use
 
 use of AI: Google Gemini for debugging, Github Copilot in Visual Studio for repetitive work like auto complete and writring similar codes.
