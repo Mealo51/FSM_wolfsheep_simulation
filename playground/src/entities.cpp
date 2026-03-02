@@ -27,7 +27,7 @@ sheep::sheep()
 	HP = 100.f;
 	fullness = 0.f;
 	eat_cd = 0.f;
-	reproduce_cd = 60.f;
+	reproduce_cd = 30.f;
 	defecate_cd = 0.f;
 	detection_radius = 3.f * tile_len;
 	position = { (float)GetRandomValue(0 + static_cast<int>(sheep_radius), 1024 - static_cast<int>(sheep_radius)),
@@ -54,7 +54,7 @@ sheep::sheep()
 	fleeweight = 3.f;
 	roamweight = 1.8f;
 	dragweight = 0.1f;
-	cohesionweight = 1.f;
+	cohesionweight = 2.f;
 	avoidmanureweight = 2.f;
 	avoidwallsweight = 3.f;
 }
@@ -120,7 +120,6 @@ void sheep::sense(App& app) {
 	nearSheep = false;
 	nearGrass = false;
 	eating = false;
-	canMate = false;
 
 	if (Collision::searchSheepWolf(*this, app.m_wolf)) {
 		nearWolf = true;
@@ -145,24 +144,24 @@ void sheep::sense(App& app) {
 	for (auto& other : app.m_sheep) {
 		if (this != &other && Collision::checkSheepSheep(*this, other)) {
 			nearSheep = true;
-			// Check if the other sheep is also full and ready
-			if (other.fullness >= 80.f && other.reproduce_cd <= 0.f) {
+
+			if (HP >= 60.f && reproduce_cd <= 0.f && other.HP >= 60.f && other.reproduce_cd <= 0.f) {
 				canMate = true;
-				mateposition = other.position; 
+				mateposition = other.position;
 			}
 		}
 	}
 
-	for (auto& m : app.m_manure) {
-		if (Collision::checkSheepManure(*this, m)) {
-			nearManure = true;
+		for (auto& m : app.m_manure) {
+			if (Collision::checkSheepManure(*this, m)) {
+				nearManure = true;
+			}
 		}
-	}
 
-	if (Collision::checkSheepWindow(*this, app.bounds)) {
-		position = Vector2Clamp(position, Vector2{ sheep_radius, sheep_radius },
-			Vector2{ app.bounds.x - sheep_radius, app.bounds.y - sheep_radius });
-	}
+		if (Collision::checkSheepWindow(*this, app.bounds)) {
+			position = Vector2Clamp(position, Vector2{ sheep_radius, sheep_radius },
+				Vector2{ app.bounds.x - sheep_radius, app.bounds.y - sheep_radius });
+		}
 }
 
 void sheep::decide() {
@@ -174,7 +173,7 @@ void sheep::decide() {
 	case sheepState::roaming:
 		if (nearWolf) state = sheepState::fleeing;
 		else if (nearGrass && !nearManure && eat_cd >= 5.0f) state = sheepState::eating;
-		else if (fullness >= 80.f && reproduce_cd <= 0.f) state = sheepState::reproducing;
+		else if (canMate) state = sheepState::reproducing;
 		break;
 	case sheepState::eating:
 		if (nearWolf) state = sheepState::fleeing;
@@ -183,13 +182,14 @@ void sheep::decide() {
 			state = sheepState::roaming;
 		}
 		else if (fullness >= 100.f) state = sheepState::full;
-		else if (fullness >= 80.f && reproduce_cd <= 0.f) state = sheepState::reproducing;
+		else if (canMate) state = sheepState::reproducing;
 		break;
 	case sheepState::fleeing:
 		if (!nearWolf) state = sheepState::roaming;
 		break;
 	case sheepState::reproducing:
-		if (reproduce_cd > 0.f) state = sheepState::roaming;
+		if (nearWolf) state = sheepState::fleeing;
+		else if (reproduce_cd > 0.f) state = sheepState::roaming;
 		break;
 	case sheepState::full:
 		if (fullness <= 20.f || nearManure) state = sheepState::roaming;
@@ -203,14 +203,15 @@ void sheep::act(float dt, App& app, Vector2 wolfpos) {
 	switch (state) {
 	case sheepState::roaming:
 		acceleration += roam();
-		for(auto& m : app.m_manure) {
+		acceleration += cohesion();
+		for (auto& m : app.m_manure) {
 			acceleration += avoidmanure(m.position);
 		}
 		acceleration += avoidWalls();
 		break;
 	case sheepState::eating:
 		velocity = { 0.f, 0.f }; // stop moving while eating
-		fullness += 10.f * dt;
+		fullness += 15.f * dt;
 		HP += 5.f * dt;
 		eating = false;
 		// Once the sheep is full enough, the grass is "eaten"
@@ -229,7 +230,6 @@ void sheep::act(float dt, App& app, Vector2 wolfpos) {
 		break;
 	case sheepState::reproducing:
 		acceleration += cohesion();
-		reproduce_cd = 60.f; //reset reproduce cooldown
 		break;
 	case sheepState::full:
 		if (defecate_cd <= 0.f) {
@@ -283,7 +283,7 @@ Vector2 sheep::cohesion()
 Vector2 sheep::avoidmanure(Vector2 manurePos)
 {
 	Vector2 toManure = manurePos - position;
-	if(Vector2Length(toManure) > detection_radius) {
+	if (Vector2Length(toManure) > detection_radius) {
 		return { 0.f, 0.f }; // No avoidance if the manure is outside the detection radius
 	}
 	auto away = Vector2Normalize(position - manurePos);
@@ -317,8 +317,8 @@ Vector2 sheep::avoidWalls()
 //action functions
 sheep sheep::reproduce()
 {
-	reproduce_cd = 10.f; //reset reproduce cooldown
-	HP -= 30.f;
+	reproduce_cd = 30.f; //reset reproduce cooldown
+	HP = 20.f;
 	sheep offspring;
 	offspring.position = position; // Start offspring at parent's position
 	return offspring;
@@ -354,7 +354,7 @@ wolf::wolf()
 	seekweight = 2.f;
 	roamweight = 3.f;
 	dragweight = 0.1f;
-
+	avoidwallsweight = 5.f;
 }
 
 void wolf::update(float dt, App& app)
@@ -379,7 +379,7 @@ void wolf::update(float dt, App& app)
 	}
 
 	Vector2 currentMoveTarget = (nearSheep) ? targetsheeppos : denposition;
-    act(dt, currentMoveTarget);
+	act(dt, currentMoveTarget);
 }
 
 void wolf::render() const
@@ -419,15 +419,13 @@ void wolf::sense(App& app)
 	for (auto& s : app.m_sheep)
 	{
 		float dist = Vector2Distance(position, s.position);
-
+		if (!s.isAlive) continue;
 		// Find closest sheep within radius
 		if (dist < closestDist) {
 			closestDist = dist;
 			targetsheeppos = s.position;
 			nearSheep = true;
 		}
-
-		// eat sheep
 		if (Collision::checkWolfSheep(*this, s))
 		{
 			if (hit_cd >= 10.0f) {
@@ -456,7 +454,8 @@ void wolf::decide() {
 		break;
 
 	case wolfState::attacking:
-		if (hunger <= 20.f) state = wolfState::returning;
+		if (!nearSheep) state = wolfState::roaming;
+		else if (hunger <= 20.f) state = wolfState::returning;
 		break;
 	}
 }
@@ -480,6 +479,7 @@ void wolf::act(float dt, Vector2 targetPos) {
 	case wolfState::roaming:
 		hunger += 20.0f * dt;
 		acceleration += roam();
+		acceleration += avoidWalls();
 		break;
 	case wolfState::attacking:
 		hunger += 20.0f * dt;
@@ -518,4 +518,27 @@ Vector2 wolf::seek(Vector2 target)
 Vector2 wolf::drag()
 {
 	return -velocity * dragweight;
+}
+
+Vector2 wolf::avoidWalls()
+{
+	float margin = 50.0f; // Distance from wall to start turning
+	Vector2 desired = { 0, 0 };
+
+	// If too far left, desire to go right
+	if (position.x < margin) desired.x = speed;
+	// If too far right, desire to go left
+	else if (position.x > 1024 - margin) desired.x = -speed;
+
+	// If too far top, desire to go down
+	if (position.y < margin) desired.y = speed;
+	// If too far bottom, desire to go up
+	else if (position.y > 1024 - margin) desired.y = -speed;
+
+	if (desired.x != 0 || desired.y != 0) {
+		desired = Vector2Normalize(desired) * speed;
+		return (desired - velocity) * avoidwallsweight; // Return the steering force
+	}
+
+	return { 0, 0 };
 }

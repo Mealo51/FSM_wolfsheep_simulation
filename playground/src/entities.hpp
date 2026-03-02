@@ -99,9 +99,11 @@ struct wolf {
 	float roamweight;
 	float seekweight;
 	float dragweight;
+	float avoidwallsweight;
 	Vector2 roam();
 	Vector2 seek(Vector2 target);
 	Vector2 drag();
+	Vector2 avoidWalls();
 
 	float hunger;
 	float detection_radius;

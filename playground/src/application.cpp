@@ -15,8 +15,9 @@ App::App(int width, int height)
 	gy = 0.f;
 
 	//sheep initialization
-	m_sheep.reserve(6);
-	for (int i = 0; i < 6; i++)
+	const int sheep_count = 6;
+	m_sheep.reserve(sheep_count);
+	for (int i = 0; i < sheep_count; i++)
 	{
 		m_sheep.emplace_back(sheep());
 	}
@@ -43,6 +44,7 @@ grass App::spread()
 			for (int i = 0; i < 2; i++) {
 				if (m_grass[index].state == GrassState::dirt) {
 					m_grass[index] = grass(m_grass[index].position);
+					m_grass[index].state = GrassState::growing;
 					g.spread_attempts++;
 					g.spread_indices[i] = index;
 				}
@@ -61,7 +63,7 @@ void App::update(float dt)
 	}
 	spread();
 	for (auto& s : m_sheep) {
-
+		if (!s.isAlive) continue;
 		s.update(dt, *this, m_wolf.position);
 
 		if (s.state == sheepState::reproducing) {
@@ -71,10 +73,11 @@ void App::update(float dt)
 		}
 	}
 	m_sheep.erase(
-		std::remove_if(m_sheep.begin(), m_sheep.end(), [](const sheep& s) {
-			return s.state == sheepState::dead;
-			}),
-		m_sheep.end());
+        std::remove_if(m_sheep.begin(), m_sheep.end(), [](const sheep& s) {
+            return !s.isAlive; 
+        }), 
+        m_sheep.end()
+    );
 	for (auto& m : m_manure) {
 		m.lifetime -= dt;
 		if (m.lifetime <= 0) {
