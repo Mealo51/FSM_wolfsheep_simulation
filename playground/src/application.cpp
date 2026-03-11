@@ -67,9 +67,9 @@ void App::update(float dt)
 		s.update(dt, *this, m_wolf.position);
 
 		if (s.state == sheepState::reproducing) {
+			s.state = sheepState::roaming;
 			m_sheep.emplace_back(s.reproduce());
 			s.mateposition = { 0,0 };
-			s.state = sheepState::roaming;
 		}
 	}
 	m_sheep.erase(

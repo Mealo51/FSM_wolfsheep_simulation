@@ -192,7 +192,7 @@ void sheep::decide() {
 		else if (reproduce_cd > 0.f) state = sheepState::roaming;
 		break;
 	case sheepState::full:
-		if (fullness <= 20.f || nearManure) state = sheepState::roaming;
+		if (fullness <= 25.f || nearManure) state = sheepState::roaming;
 		break;
 	}
 }
@@ -203,7 +203,7 @@ void sheep::act(float dt, App& app, Vector2 wolfpos) {
 	switch (state) {
 	case sheepState::roaming:
 		acceleration += roam();
-		acceleration += cohesion();
+		if(nearSheep)acceleration += cohesion();
 		for (auto& m : app.m_manure) {
 			acceleration += avoidmanure(m.position);
 		}
@@ -318,6 +318,7 @@ Vector2 sheep::avoidWalls()
 sheep sheep::reproduce()
 {
 	reproduce_cd = 30.f; //reset reproduce cooldown
+	canMate = false;
 	HP = 20.f;
 	sheep offspring;
 	offspring.position = position; // Start offspring at parent's position
