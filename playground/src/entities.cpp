@@ -130,15 +130,16 @@ void sheep::sense(App& app) {
 
 	for (auto& g : app.m_grass) {
 		// CHECK: Is the grass actually GROWN?
-		if (g.state == GrassState::grown) {
-			if (Collision::checkSheepGrass(*this, g)) {
-				nearGrass = true;
-				// Optional: Store a pointer to this specific grass 
-				// so the sheep knows WHICH one to turn back to dirt
-				targetGrass = &g;
-				break; // Found food, stop looking
-			}
+
+		if (Collision::checkSheepGrass(*this, g) && g.state == GrassState::grown)
+		{
+			nearGrass = true;
+			// Optional: Store a pointer to this specific grass 
+			// so the sheep knows WHICH one to turn back to dirt
+			targetGrass = &g;
+			break; // Found food, stop looking
 		}
+
 	}
 
 	for (auto& other : app.m_sheep) {
@@ -152,16 +153,16 @@ void sheep::sense(App& app) {
 		}
 	}
 
-		for (auto& m : app.m_manure) {
-			if (Collision::checkSheepManure(*this, m)) {
-				nearManure = true;
-			}
+	for (auto& m : app.m_manure) {
+		if (Collision::checkSheepManure(*this, m)) {
+			nearManure = true;
 		}
+	}
 
-		if (Collision::checkSheepWindow(*this, app.bounds)) {
-			position = Vector2Clamp(position, Vector2{ sheep_radius, sheep_radius },
-				Vector2{ app.bounds.x - sheep_radius, app.bounds.y - sheep_radius });
-		}
+	if (Collision::checkSheepWindow(*this, app.bounds)) {
+		position = Vector2Clamp(position, Vector2{ sheep_radius, sheep_radius },
+			Vector2{ app.bounds.x - sheep_radius, app.bounds.y - sheep_radius });
+	}
 }
 
 void sheep::decide() {
@@ -203,7 +204,7 @@ void sheep::act(float dt, App& app, Vector2 wolfpos) {
 	switch (state) {
 	case sheepState::roaming:
 		acceleration += roam();
-		if(nearSheep)acceleration += cohesion();
+		if (nearSheep)acceleration += cohesion();
 		for (auto& m : app.m_manure) {
 			acceleration += avoidmanure(m.position);
 		}
@@ -211,7 +212,7 @@ void sheep::act(float dt, App& app, Vector2 wolfpos) {
 		break;
 	case sheepState::eating:
 		velocity = { 0.f, 0.f }; // stop moving while eating
-		fullness += 15.f * dt;
+		fullness += 15.f * dt; 
 		HP += 5.f * dt;
 		eating = false;
 		// Once the sheep is full enough, the grass is "eaten"
