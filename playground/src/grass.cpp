@@ -52,7 +52,7 @@ void grass::render() const
 	case GrassState::growing:
 	case GrassState::growing_fast:
 		DrawRectangleV(position, bounds, GREEN);
-		DrawText(TextFormat("Growth: %.1f%%", (grow_progress/ total_growtime) * 100.f),
+		DrawText(TextFormat("Growth:\n %.1f%%", (grow_progress/ total_growtime) * 100.f),
 			static_cast<int>(position.x) + 5, static_cast<int>(position.y) + 5, 10, BLACK);
 		break;
 	case GrassState::grown:

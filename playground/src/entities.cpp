@@ -67,16 +67,24 @@ void sheep::update(float dt, App& app, Vector2 wolfpos)
 	sensecd += dt;
 	decidecd += dt;
 
+	if (HP >= 100.f) HP = 100.f;
+	if (fullness >= 100.f) fullness = 100.f;
+
+	if (fullness <= 60.f) HP -= 2.f * dt; //lose HP if not full enough
+	if (HP <= 0.f) {
+		isAlive = false;
+		state = sheepState::dead;
+	}
+
+	//SDA
 	if (sensecd >= 0.25f) {
 		sense(app);
 		sensecd = 0.0f;
 	}
-
 	if (decidecd >= 0.5f) {
 		decide();
 		decidecd = 0.0f;
 	}
-
 	act(dt, app, wolfpos);
 }
 
@@ -88,6 +96,8 @@ void sheep::render() const
 	//debug drawing
 	DrawCircleV(position, detection_radius, debugColor); //detection radius
 	DrawText(TextFormat("fullness: %.1f", fullness), static_cast<int>(position.x) - 30,
+		static_cast<int>(position.y) - 50, 10, BLACK);
+	DrawText(TextFormat("HP: %.1f", HP), static_cast<int>(position.x) - 30,
 		static_cast<int>(position.y) - 40, 10, BLACK);
 
 	switch (state)

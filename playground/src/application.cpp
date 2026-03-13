@@ -99,4 +99,7 @@ void App::render()
 		m.render();
 	}
 	m_wolf.render();
+
+	//debug
+	DrawText(TextFormat("Sheep count: %d", static_cast<int>(m_sheep.size())), WINDOW_WIDTH - 200, 20, 20, BLACK);
 }

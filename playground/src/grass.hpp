@@ -40,5 +40,4 @@ struct grass {
 	GrassState state;
 	Vector2 position;
 	Vector2 bounds{ tile_len, tile_len };
-	Rectangle boundsRec{ position.x, position.y, bounds.x, bounds.y };
 };

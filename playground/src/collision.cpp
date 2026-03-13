@@ -40,13 +40,31 @@ namespace Collision
 	//sheep grass, grass and manure
 	bool checkSheepGrass(const sheep& s, const grass& g)
 	{
-		return CheckCollisionCircleRec(s.position, 2.f, g.boundsRec); 
-		//make sheep only eat when it is near center so it doesn't eat from the edge of the tile
+		// 1. Create a smaller "eating zone" in the center of the tile
+	// If tile_len is 32, a margin of 10 means the sheep must be in the middle 12x12 pixels
+		float margin = tile_len * 0.3f;
+
+		Rectangle centerZone = {
+			g.position.x + margin,
+			g.position.y + margin,
+			tile_len - (margin * 2),
+			tile_len - (margin * 2)
+		};
+
+		// 2. Check if the sheep's center point is inside this small zone
+		// Using CheckCollisionPointRec is stricter than CircleRec
+		return CheckCollisionPointRec(s.position, centerZone);
 	}
 
 	bool checkGrassManure(const grass& g, const manure& m)
 	{
-		return CheckCollisionCircleRec(m.position, manure_radius, g.boundsRec);
+		Rectangle grassRec = {
+			g.position.x ,
+			g.position.y ,
+			tile_len,
+			tile_len
+		};
+		return CheckCollisionCircleRec(m.position, manure_radius, grassRec);
 	}
 
 	bool checkSheepManure(const sheep& s, const manure& m)
