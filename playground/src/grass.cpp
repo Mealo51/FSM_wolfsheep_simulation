@@ -89,11 +89,11 @@ void grass::decide()
 {
 	switch (state) {
 	case GrassState::growing:
-		if (grow_progress >= 10.f) state = GrassState::grown;
+		if (grow_progress >= 20.f) state = GrassState::grown;
 		if (near_manure) state = GrassState::growing_fast;
 		break;
 	case GrassState::growing_fast:
-		if (grow_progress >= 5.f) state = GrassState::grown;
+		if (grow_progress >= 20.f) state = GrassState::grown;
 		if (!near_manure) state = GrassState::growing;
 		break;
 	case GrassState::grown:
@@ -114,7 +114,7 @@ void grass::act(float dt, App& app)
 		grow_progress += growth_rate * dt; // Grows 1.0 unit per second
 		break;
 	case GrassState::growing_fast:
-		grow_progress += growth_rate * 2.0f; // Manure doubles growth speed
+		grow_progress += growth_rate * dt * 2.0f; // Manure doubles growth speed
 		break;
 	case GrassState::grown:
 		grown_countdown += dt;

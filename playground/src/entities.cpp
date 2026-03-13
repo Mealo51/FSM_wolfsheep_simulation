@@ -51,11 +51,11 @@ sheep::sheep()
 	acceleration = { 0.f,0.f };
 	speed = 1.f * tile_len;
 	max_speed = 1.5f * tile_len;
-	fleeweight = 3.f;
+	fleeweight = 5.f;
 	roamweight = 1.8f;
 	dragweight = 0.1f;
 	cohesionweight = 2.f;
-	avoidmanureweight = 2.f;
+	avoidmanureweight = 0.8f;
 	avoidwallsweight = 3.f;
 }
 
@@ -120,6 +120,7 @@ void sheep::sense(App& app) {
 	nearSheep = false;
 	nearGrass = false;
 	eating = false;
+	canMate = false;
 
 	if (Collision::searchSheepWolf(*this, app.m_wolf)) {
 		nearWolf = true;
@@ -173,7 +174,7 @@ void sheep::decide() {
 	switch (state) {
 	case sheepState::roaming:
 		if (nearWolf) state = sheepState::fleeing;
-		else if (nearGrass && !nearManure && eat_cd >= 5.0f) state = sheepState::eating;
+		else if (nearGrass && !nearManure && eat_cd >= 2.0f) state = sheepState::eating;
 		else if (canMate) state = sheepState::reproducing;
 		break;
 	case sheepState::eating:
@@ -346,7 +347,7 @@ wolf::wolf()
 	decidecd = 0.f;
 	nearSheep = false;
 	hit = false;
-	hit_cd = 0.f;
+	hit_cd = 10.f; //can hit at the start of the simulation so no false in the first hunt
 	targetsheeppos = { 0,0 };
 
 	speed = 1.5f * tile_len;
