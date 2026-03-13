@@ -52,7 +52,7 @@ void grass::render() const
 	case GrassState::growing:
 	case GrassState::growing_fast:
 		DrawRectangleV(position, bounds, GREEN);
-		DrawText(TextFormat("Growth: %.1f%%", grow_progress * 60.f / 10.f),
+		DrawText(TextFormat("Growth: %.1f%%", (grow_progress/ total_growtime) * 100.f),
 			static_cast<int>(position.x) + 5, static_cast<int>(position.y) + 5, 10, BLACK);
 		break;
 	case GrassState::grown:
@@ -89,11 +89,11 @@ void grass::decide()
 {
 	switch (state) {
 	case GrassState::growing:
-		if (grow_progress >= 20.f) state = GrassState::grown;
+		if (grow_progress >= total_growtime) state = GrassState::grown;
 		if (near_manure) state = GrassState::growing_fast;
 		break;
 	case GrassState::growing_fast:
-		if (grow_progress >= 20.f) state = GrassState::grown;
+		if (grow_progress >= total_growtime) state = GrassState::grown;
 		if (!near_manure) state = GrassState::growing;
 		break;
 	case GrassState::grown:

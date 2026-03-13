@@ -18,7 +18,7 @@ manure::manure(Vector2 pos)
 
 void manure::render() const
 {
-	DrawCircleV(position, 5.f, BROWN);
+	DrawCircleV(position, manure_radius, BROWN);
 }
 
 //sheep
@@ -121,6 +121,7 @@ void sheep::sense(App& app) {
 	nearGrass = false;
 	eating = false;
 	canMate = false;
+	targetGrass = nullptr;
 
 	if (Collision::searchSheepWolf(*this, app.m_wolf)) {
 		nearWolf = true;
@@ -131,16 +132,12 @@ void sheep::sense(App& app) {
 
 	for (auto& g : app.m_grass) {
 		// CHECK: Is the grass actually GROWN?
-
 		if (Collision::checkSheepGrass(*this, g) && g.state == GrassState::grown)
 		{
 			nearGrass = true;
-			// Optional: Store a pointer to this specific grass 
-			// so the sheep knows WHICH one to turn back to dirt
 			targetGrass = &g;
 			break; // Found food, stop looking
 		}
-
 	}
 
 	for (auto& other : app.m_sheep) {
@@ -174,7 +171,10 @@ void sheep::decide() {
 	switch (state) {
 	case sheepState::roaming:
 		if (nearWolf) state = sheepState::fleeing;
-		else if (nearGrass && !nearManure && eat_cd >= 2.0f) state = sheepState::eating;
+		else if (nearGrass && targetGrass != nullptr && 
+			targetGrass->state == GrassState::grown && eat_cd >= 2.0f) {
+			state = sheepState::eating;
+		}
 		else if (canMate) state = sheepState::reproducing;
 		break;
 	case sheepState::eating:
@@ -212,12 +212,27 @@ void sheep::act(float dt, App& app, Vector2 wolfpos) {
 		acceleration += avoidWalls();
 		break;
 	case sheepState::eating:
+	{
 		velocity = { 0.f, 0.f }; // stop moving while eating
-		fullness += 15.f * dt; 
-		HP += 5.f * dt;
+		fullness += 20.f * dt;
+		HP += 10.f * dt;
 		eating = false;
-		// Once the sheep is full enough, the grass is "eaten"
-		if (fullness >= 100.f) {
+
+		// Track how much they've eaten in this one sitting
+		static float current_meal_timer = 0.f;
+		current_meal_timer += dt;
+
+		// Limit: Eat for 2 seconds
+		if (current_meal_timer >= 2.0f) {
+			current_meal_timer = 0.f; // Reset for next time
+			eat_cd = 0.f;
+			if (targetGrass != nullptr) {
+				targetGrass->state = GrassState::dirt;
+				targetGrass->grow_progress = 0.f;
+			}
+			state = sheepState::roaming; // Go back to roaming instead of 'full'
+		}
+		else if (fullness >= 100.f) { // Once the sheep is full enough, the grass is "eaten"
 			eat_cd = 0.f; // reset eat cooldown
 			if (targetGrass != nullptr) {
 				targetGrass->state = GrassState::dirt; // Grass is gone!
@@ -226,6 +241,7 @@ void sheep::act(float dt, App& app, Vector2 wolfpos) {
 			state = sheepState::full;
 		}
 		break;
+	}
 	case sheepState::fleeing:
 		acceleration += flee(wolfpos);
 		acceleration += avoidWalls();
