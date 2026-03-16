@@ -99,7 +99,8 @@ void sheep::render() const
 		static_cast<int>(position.y) - 50, 10, BLACK);
 	DrawText(TextFormat("HP: %.1f", HP), static_cast<int>(position.x) - 30,
 		static_cast<int>(position.y) - 40, 10, BLACK);
-
+	Color debugVisionColor = nearWolf ? RED : GREEN;
+	DrawCircleLinesV(position, detection_radius, debugVisionColor);
 	switch (state)
 	{
 	case sheepState::roaming:
@@ -263,7 +264,7 @@ void sheep::act(float dt, App& app, Vector2 wolfpos) {
 		if (defecate_cd <= 0.f) {
 			defecate_cd = 10.f; //reset defecate cooldown
 			app.m_manure.emplace_back(defecate());
-			fullness = 20.f;
+			fullness -= 40.f;
 		}
 		break;
 	}
@@ -418,6 +419,8 @@ void wolf::render() const
 	//debug text
 	DrawText(TextFormat("WHunger: %.1f", hunger), 10,
 		40, 20, NON_COLLIDING_COLOR);
+	Color debugVisionColor = nearSheep ? RED : GREEN;
+	DrawCircleLinesV(position, detection_radius, debugVisionColor);
 	switch (state)
 	{
 	case wolfState::roaming:

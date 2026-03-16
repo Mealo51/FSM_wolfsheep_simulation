@@ -62,16 +62,22 @@ void App::update(float dt)
 		g.update(dt, *this);
 	}
 	spread();
+
+	std::vector<sheep> newsheep;
 	for (auto& s : m_sheep) {
 		if (!s.isAlive) continue;
 		s.update(dt, *this, m_wolf.position);
 
 		if (s.state == sheepState::reproducing) {
 			s.state = sheepState::roaming;
-			m_sheep.emplace_back(s.reproduce());
+			newsheep.emplace_back(s.reproduce());
 			s.mateposition = { 0,0 };
 		}
 	}
+	for (auto& baby : newsheep) {
+		m_sheep.push_back(baby);
+	}
+
 	m_sheep.erase(
         std::remove_if(m_sheep.begin(), m_sheep.end(), [](const sheep& s) {
             return !s.isAlive; 
