@@ -3,6 +3,7 @@
 #pragma once
 
 #include "raylib.h"
+#include <vector>
 
 struct App;
 struct grass;
@@ -32,7 +33,7 @@ struct sheep {
 
 	void sense(App& app);
 	void decide();
-	void act(float dt, App& app,Vector2 wolfpos);
+	void act(float dt, App& app, Vector2 wolfpos);
 	float sensecd;
 	float decidecd;
 
@@ -75,6 +76,9 @@ struct sheep {
 	Vector2 position;
 	Vector2 velocity;
 	Vector2 acceleration;
+
+	std::vector<Vector2> path;
+	float pathrefreshcd;
 };
 
 enum class wolfState {
@@ -120,5 +124,8 @@ struct wolf {
 	Vector2 velocity;
 	Vector2 acceleration;
 	Vector2 denposition;
+
+	std::vector<Vector2> path;
+	float pathrefreshcd;
 };
 

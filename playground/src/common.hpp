@@ -26,6 +26,15 @@ inline Vector2 perpendicular_ccw(const Vector2 &rhs)              { return Vecto
 namespace Math {
    constexpr float kPI  = 3.1415927f;
    constexpr float kTAU = (2.0f * kPI);
+
+   inline float tofloat(int a)
+   {
+	   return static_cast<float>(a);
+   }
+   inline int toint(float a)
+   {
+	   return static_cast<int>(a);
+   }
 } // !Math
 
 namespace Random {

@@ -6,6 +6,7 @@
 #include "application.hpp"
 #include "collision.hpp"
 #include "grass.hpp"
+#include "pathfinding.hpp"
 
 constexpr Color NON_COLLIDING_COLOR = LIGHTGRAY;
 
@@ -394,6 +395,7 @@ wolf::wolf()
 	hit_cd = 10.f; //can hit at the start of the simulation so no false in the first hunt
 	targetsheeppos = { 0,0 };
 
+	pathrefreshcd = 0.f;
 	speed = 1.5f * tile_len;
 	max_speed = 4.f * tile_len;
 	velocity = { 0,0 };
@@ -410,9 +412,17 @@ void wolf::update(float dt, App& app)
 	sensecd += dt;
 	decidecd += dt;
 	hit_cd += dt;
+	pathrefreshcd += dt;
 
 	if (hunger >= 100.f) {
 		hunger = 100.f;
+	}
+	
+	if (state == wolfState::attacking && nearSheep) {
+		// Only recalculate every few frames to save CPU
+		if (pathrefreshcd >= 0.5f) {
+			path = Pathfinding::findPath(position, targetsheeppos, app.m_grass);
+		}
 	}
 
 	if (sensecd >= 0.25f) {

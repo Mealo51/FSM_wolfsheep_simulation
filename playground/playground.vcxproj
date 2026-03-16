@@ -106,6 +106,7 @@
     <ClCompile Include="src\entities.cpp" />
     <ClCompile Include="src\grass.cpp" />
     <ClCompile Include="src\input.cpp" />
+    <ClCompile Include="src\pathfinding.cpp" />
     <ClCompile Include="src\playground.cpp" />
     <ClCompile Include="src\zip.cpp" />
   </ItemGroup>
@@ -117,6 +118,7 @@
     <ClInclude Include="src\entities.hpp" />
     <ClInclude Include="src\grass.hpp" />
     <ClInclude Include="src\input.hpp" />
+    <ClInclude Include="src\pathfinding.hpp" />
     <ClInclude Include="src\zip.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
