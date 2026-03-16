@@ -18,7 +18,7 @@ grass::grass(Vector2 pos)
 		GetRandomValue(0, 9) <= 3 ? GrassState::grown : GrassState::wilting;
 	if (state == GrassState::growing)
 	{
-		grow_progress = static_cast<float>(GetRandomValue(0, 20));
+		grow_progress = static_cast<float>(GetRandomValue(0, 12));
 	}
 	else
 	{
@@ -62,6 +62,11 @@ void grass::render() const
 	case GrassState::wilting:
 		DrawRectangleV(position, bounds, YELLOW);
 		DrawText("Wilting", static_cast<int>(position.x) + 5,
+			static_cast<int>(position.y) + 5, 10, BLACK);
+		break;
+	case GrassState::blocked:
+		DrawRectangleV(position, bounds, GRAY);
+		DrawText("Blocked", static_cast<int>(position.x) + 5,
 			static_cast<int>(position.y) + 5, 10, BLACK);
 		break;
 	}//dirt state is not rendered, it's just empty space

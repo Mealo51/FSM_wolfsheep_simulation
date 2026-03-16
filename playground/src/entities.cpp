@@ -416,9 +416,6 @@ void wolf::render() const
 {
 	DrawCircleV(position, wolf_radius, DARKGRAY);
 	DrawCircleV(position, detection_radius, debugColor);
-	//debug text
-	DrawText(TextFormat("WHunger: %.1f", hunger), 10,
-		40, 20, NON_COLLIDING_COLOR);
 	Color debugVisionColor = nearSheep ? RED : GREEN;
 	DrawCircleLinesV(position, detection_radius, debugVisionColor);
 	switch (state)

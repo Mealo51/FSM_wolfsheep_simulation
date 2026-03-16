@@ -12,7 +12,8 @@ enum class GrassState {
 	growing_fast,
 	grown,
 	wilting,
-	dirt
+	dirt,
+	blocked
 };
 
 struct grass {

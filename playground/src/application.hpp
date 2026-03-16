@@ -17,6 +17,8 @@ struct App
 
 	grass spread();
 
+	bool editMode;
+
 	float gx, gy;
 	Vector2 bounds{ 0,0 };
 	wolf m_wolf;
