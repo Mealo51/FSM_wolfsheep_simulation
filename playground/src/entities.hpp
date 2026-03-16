@@ -44,12 +44,14 @@ struct sheep {
 	Vector2 drag();
 	Vector2 cohesion();
 	Vector2 avoidmanure(Vector2 manurePos);
-	Vector2 avoidWalls();
+	Vector2 avoidBorders();
+	Vector2 avoidWalls(Vector2 pos);
 	float fleeweight;
 	float roamweight;
 	float dragweight;
 	float cohesionweight;
 	float avoidmanureweight;
+	float avoidborderweight;
 	float avoidwallsweight;
 	float speed;
 	float max_speed;
@@ -90,7 +92,7 @@ struct wolf {
 
 	void sense(App& app);
 	void decide();
-	void act(float dt, Vector2 sheeppos);
+	void act(float dt, App& app);
 	float decidecd;
 	float sensecd;
 
@@ -99,11 +101,13 @@ struct wolf {
 	float roamweight;
 	float seekweight;
 	float dragweight;
+	float avoidborderweight;
 	float avoidwallsweight;
 	Vector2 roam();
 	Vector2 seek(Vector2 target);
 	Vector2 drag();
-	Vector2 avoidWalls();
+	Vector2 avoidBorders();
+	Vector2 avoidWalls(Vector2 pos);
 
 	float hunger;
 	float detection_radius;

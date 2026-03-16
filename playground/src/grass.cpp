@@ -14,6 +14,7 @@ grass::grass(Vector2 pos)
 	grown_countdown = 0.f;
 	spread_attempts = 0;
 	near_manure = false;
+	rect = { pos.x, pos.y, tile_len, tile_len };
 	state = GetRandomValue(0, 9) <= 5 ? GrassState::growing :
 		GetRandomValue(0, 9) <= 3 ? GrassState::grown : GrassState::wilting;
 	if (state == GrassState::growing)

@@ -56,6 +56,7 @@ sheep::sheep()
 	dragweight = 0.1f;
 	cohesionweight = 2.f;
 	avoidmanureweight = 0.8f;
+	avoidborderweight = 4.f;
 	avoidwallsweight = 3.f;
 }
 
@@ -220,7 +221,12 @@ void sheep::act(float dt, App& app, Vector2 wolfpos) {
 		for (auto& m : app.m_manure) {
 			acceleration += avoidmanure(m.position);
 		}
-		acceleration += avoidWalls();
+		for (auto& g : app.m_grass) {
+			if (g.state == GrassState::blocked) {
+				acceleration += avoidWalls(g.position);
+			}
+		}
+		acceleration += avoidBorders();
 		break;
 	case sheepState::eating:
 	{
@@ -255,7 +261,7 @@ void sheep::act(float dt, App& app, Vector2 wolfpos) {
 	}
 	case sheepState::fleeing:
 		acceleration += flee(wolfpos);
-		acceleration += avoidWalls();
+		acceleration += avoidBorders();
 		break;
 	case sheepState::reproducing:
 		acceleration += cohesion();
@@ -320,7 +326,7 @@ Vector2 sheep::avoidmanure(Vector2 manurePos)
 	return (desired_velocity - velocity) * avoidmanureweight;
 }
 
-Vector2 sheep::avoidWalls()
+Vector2 sheep::avoidBorders()
 {
 	float margin = 50.0f; // Distance from wall to start turning
 	Vector2 desired = { 0, 0 };
@@ -337,10 +343,21 @@ Vector2 sheep::avoidWalls()
 
 	if (desired.x != 0 || desired.y != 0) {
 		desired = Vector2Normalize(desired) * speed;
-		return (desired - velocity) * avoidwallsweight; // Return the steering force
+		return (desired - velocity) * avoidborderweight; // Return the steering force
 	}
 
 	return { 0, 0 };
+}
+
+Vector2 sheep::avoidWalls(Vector2 pos)
+{
+	Vector2 toWall = { 0, 0 };
+	if (Vector2Length(toWall) > detection_radius) {
+		return { 0.f, 0.f }; 
+	}
+	auto away = Vector2Normalize(position - pos);
+	auto desired_velocity = away * speed;
+	return (desired_velocity - velocity) * avoidwallsweight;
 }
 
 //action functions
@@ -384,7 +401,8 @@ wolf::wolf()
 	seekweight = 2.f;
 	roamweight = 3.f;
 	dragweight = 0.1f;
-	avoidwallsweight = 5.f;
+	avoidborderweight = 5.f;
+	avoidwallsweight = 4.f;
 }
 
 void wolf::update(float dt, App& app)
@@ -408,8 +426,7 @@ void wolf::update(float dt, App& app)
 		decidecd = 0.0f;
 	}
 
-	Vector2 currentMoveTarget = (nearSheep) ? targetsheeppos : denposition;
-	act(dt, currentMoveTarget);
+	act(dt, app);
 }
 
 void wolf::render() const
@@ -489,9 +506,10 @@ void wolf::decide() {
 	}
 }
 
-void wolf::act(float dt, Vector2 targetPos) {
+void wolf::act(float dt, App& app) {
 	acceleration = { 0,0 };
 	acceleration += drag();
+	Vector2 currentMoveTarget = (nearSheep) ? targetsheeppos : denposition;
 
 	if (hit) {
 		hunger -= 100.f;
@@ -508,11 +526,16 @@ void wolf::act(float dt, Vector2 targetPos) {
 	case wolfState::roaming:
 		hunger += 20.0f * dt;
 		acceleration += roam();
-		acceleration += avoidWalls();
+		acceleration += avoidBorders();
+		for (auto& g : app.m_grass) {
+			if (g.state == GrassState::blocked) {
+				acceleration += avoidWalls(g.position);
+			}
+		}
 		break;
 	case wolfState::attacking:
 		hunger += 20.0f * dt;
-		acceleration += seek(targetPos);
+		acceleration += seek(currentMoveTarget);
 		break;
 	case wolfState::returning:
 		acceleration += seek(denposition);
@@ -549,7 +572,7 @@ Vector2 wolf::drag()
 	return -velocity * dragweight;
 }
 
-Vector2 wolf::avoidWalls()
+Vector2 wolf::avoidBorders()
 {
 	float margin = 50.0f; // Distance from wall to start turning
 	Vector2 desired = { 0, 0 };
@@ -566,8 +589,19 @@ Vector2 wolf::avoidWalls()
 
 	if (desired.x != 0 || desired.y != 0) {
 		desired = Vector2Normalize(desired) * speed;
-		return (desired - velocity) * avoidwallsweight; // Return the steering force
+		return (desired - velocity) * avoidborderweight; // Return the steering force
 	}
 
 	return { 0, 0 };
+}
+
+Vector2 wolf::avoidWalls(Vector2 pos)
+{
+	Vector2 toWall = { 0, 0 };
+	if (Vector2Length(toWall) > detection_radius) {
+		return { 0.f, 0.f };
+	}
+	auto away = Vector2Normalize(position - pos);
+	auto desired_velocity = away * speed;
+	return (desired_velocity - velocity) * avoidwallsweight;
 }
