@@ -59,7 +59,7 @@ sheep::sheep()
 	seekweight = 2.f;
 	cohesionweight = 2.f;
 	avoidmanureweight = 0.8f;
-	avoidborderweight = 4.f;
+	avoidborderweight = 1.3f;
 }
 
 void sheep::update(float dt, App& app, Vector2 wolfpos)
@@ -481,7 +481,7 @@ wolf::wolf()
 	seekweight = 2.f;
 	roamweight = 3.f;
 	dragweight = 0.1f;
-	avoidborderweight = 2.f;
+	avoidborderweight = 1.2f;
 }
 
 void wolf::update(float dt, App& app)
