@@ -285,7 +285,7 @@ void sheep::act(float dt, App& app, Vector2 wolfpos) {
 		case sheepState::eating: {
 			velocity = { 0.f, 0.f }; // stop moving while eating
 			fullness += 20.f * dt;
-			HP += 10.f * dt;
+			HP += 15.f * dt;
 			eating = false;
 
 			// Track how much they've eaten in this one sitting
