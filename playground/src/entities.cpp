@@ -138,8 +138,7 @@ void sheep::sense(App& app) {
 	nearGrass = false;
 	eating = false;
 	canMate = false;
-	// Note: Do NOT reset targetGrass to nullptr at the top, 
-	// or we lose our "memory" of what we were walking toward.
+	// Memory Persistence: We do NOT reset targetGrass to nullptr here.
 
 	// 1. Wolf Detection
 	if (Collision::searchSheepWolf(*this, app.m_wolf)) {
@@ -149,15 +148,15 @@ void sheep::sense(App& app) {
 		isAlive = false;
 	}
 
+	// 2. VALIDATION: Check if our remembered target is still valid
 	if (targetGrass != nullptr) {
-		// If the grass we were heading toward is no longer grown, lose the target
 		if (targetGrass->state != GrassState::grown) {
 			targetGrass = nullptr;
 			path.clear();
 		}
 	}
 
-	// 2. SEARCH: Only look for new grass if we don't have one
+	// 3. SEARCH: Only look for new grass if we don't have a target and are hungry
 	if (fullness < 50.0f && targetGrass == nullptr) {
 		float closestDist = detection_radius;
 		grass* bestFound = nullptr;
@@ -174,31 +173,14 @@ void sheep::sense(App& app) {
 		targetGrass = bestFound;
 	}
 
-	// 3. CONTACT: Check if we are currently touching grown grass
-	nearGrass = false;
+	// 4. CONTACT: Check if we are currently touching grown grass
 	for (auto& g : app.m_grass) {
 		if (g.state == GrassState::grown && Collision::checkSheepGrass(*this, g)) {
 			nearGrass = true;
-			targetGrass = &g; // Lock onto the one we are touching
+			// If we touch grass that isn't our "target", we pivot to eat this one instead
+			targetGrass = &g;
 			break;
 		}
-	}
-
-	// 4. Search for NEW grass only if we don't have a valid target
-	if (fullness < 50.0f && targetGrass == nullptr) {
-		float closestDist = detection_radius;
-		grass* bestFound = nullptr;
-
-		for (auto& g : app.m_grass) {
-			if (g.state == GrassState::grown) {
-				float d = Vector2Distance(position, g.position);
-				if (d < closestDist) {
-					closestDist = d;
-					bestFound = &g;
-				}
-			}
-		}
-		targetGrass = bestFound;
 	}
 
 	// 5. Mating Sense
@@ -212,7 +194,6 @@ void sheep::sense(App& app) {
 		}
 	}
 
-
 	for (auto& m : app.m_manure) {
 		if (Collision::checkSheepManure(*this, m)) {
 			nearManure = true;
@@ -225,21 +206,16 @@ void sheep::sense(App& app) {
 	}
 }
 
-void sheep::decide(App& app) { // Added App& app to call pathfinding
+void sheep::decide(App& app) {
 	if (!isAlive) {
 		state = sheepState::dead;
 		return;
 	}
 
+	// Robust Null Check for state logic
 	bool targetIsGrown = (targetGrass != nullptr && targetGrass->state == GrassState::grown);
 
-	// --- PATHFINDING LOGIC ---
-	// Only calculate a new path if we have a target AND we aren't already on a path
-	if (targetGrass->position.x != 0 && path.empty() && state == sheepState::roaming) {
-		path = Pathfinding::findPath(position, targetGrass->position, app.m_grass);
-	}
-
-	// Emergency: If fleeing, clear the food path
+	// Emergency: If fleeing, clear the food path to allow steering away
 	if (nearWolf) {
 		path.clear();
 	}
@@ -247,27 +223,31 @@ void sheep::decide(App& app) { // Added App& app to call pathfinding
 	// --- STATE MACHINE ---
 	switch (state) {
 	case sheepState::roaming:
-		if (nearWolf) state = sheepState::fleeing;
-		// Safety: only transition to eating if targetGrass is NOT null
+		if (nearWolf) {
+			state = sheepState::fleeing;
+		}
 		else if (nearGrass && targetIsGrown && eat_cd >= 2.0f) {
 			state = sheepState::eating;
-			path.clear();
+			path.clear(); // Stop moving to eat
 		}
-		else if (canMate) state = sheepState::reproducing;
-
-		// Pathfinding trigger
-		if (targetIsGrown && path.empty()) {
+		else if (canMate) {
+			state = sheepState::reproducing;
+		}
+		else if (targetIsGrown && path.empty()) {
+			// Only pathfind if we have a valid target and aren't doing something else
 			path = Pathfinding::findPath(position, targetGrass->position, app.m_grass);
 		}
-		break;
 		break;
 
 	case sheepState::eating:
 		if (nearWolf) state = sheepState::fleeing;
-		else if (!nearGrass || targetGrass == nullptr || targetGrass->state != GrassState::grown) {
+		else if (!nearGrass || !targetIsGrown) {
 			state = sheepState::roaming;
 		}
-		else if (fullness >= 100.f) state = sheepState::full;
+		else if (fullness >= 100.f) {
+			state = sheepState::full;
+			targetGrass = nullptr; // Reset target after finishing meal
+		}
 		break;
 
 	case sheepState::fleeing:
@@ -292,7 +272,7 @@ void sheep::act(float dt, App& app, Vector2 wolfpos) {
 	if (!path.empty()) {
 		Vector2 target = path.front();
 		acceleration += seek(target);
-		if (Vector2Distance(position, target) < (tile_len * 0.25f)) {
+		if (Vector2Distance(position, target) < (tile_len * 0.35f)) {
 			path.erase(path.begin());
 		}
 	}
@@ -331,6 +311,13 @@ void sheep::act(float dt, App& app, Vector2 wolfpos) {
 				state = sheepState::full;
 			}
 		} break;
+		case sheepState::full:
+			if (defecate_cd <= 0.f) {
+				defecate_cd = 10.f; //reset defecate cooldown
+				app.m_manure.emplace_back(defecate());
+				fullness -= 40.f;
+			}
+			break;
 		}
 	}
 
