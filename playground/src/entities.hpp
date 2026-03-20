@@ -32,7 +32,7 @@ struct sheep {
 	void render() const;
 
 	void sense(App& app);
-	void decide();
+	void decide(App& app);
 	void act(float dt, App& app, Vector2 wolfpos);
 	float sensecd;
 	float decidecd;

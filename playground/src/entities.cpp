@@ -86,7 +86,7 @@ void sheep::update(float dt, App& app, Vector2 wolfpos)
 		sensecd = 0.0f;
 	}
 	if (decidecd >= 0.5f) {
-		decide();
+		decide(app);
 		decidecd = 0.0f;
 	}
 	act(dt, app, wolfpos);
@@ -138,8 +138,10 @@ void sheep::sense(App& app) {
 	nearGrass = false;
 	eating = false;
 	canMate = false;
-	targetGrass = nullptr;
+	// Note: Do NOT reset targetGrass to nullptr at the top, 
+	// or we lose our "memory" of what we were walking toward.
 
+	// 1. Wolf Detection
 	if (Collision::searchSheepWolf(*this, app.m_wolf)) {
 		nearWolf = true;
 	}
@@ -147,37 +149,68 @@ void sheep::sense(App& app) {
 		isAlive = false;
 	}
 
-	for (auto& g : app.m_grass) {
-		// CHECK: Is the grass actually GROWN?
-		if (Collision::checkSheepGrass(*this, g) && g.state == GrassState::grown)
-		{
-			nearGrass = true;
-			targetGrass = &g;
-			break; // Found food, stop looking
+	if (targetGrass != nullptr) {
+		// If the grass we were heading toward is no longer grown, lose the target
+		if (targetGrass->state != GrassState::grown) {
+			targetGrass = nullptr;
+			path.clear();
 		}
 	}
-	for (auto& other : app.m_sheep) {
-		if (this != &other && Collision::checkSheepSheep(*this, other)) {
-			nearSheep = true;
 
+	// 2. SEARCH: Only look for new grass if we don't have one
+	if (fullness < 50.0f && targetGrass == nullptr) {
+		float closestDist = detection_radius;
+		grass* bestFound = nullptr;
+
+		for (auto& g : app.m_grass) {
+			if (g.state == GrassState::grown) {
+				float d = Vector2Distance(position, g.position);
+				if (d < closestDist) {
+					closestDist = d;
+					bestFound = &g;
+				}
+			}
+		}
+		targetGrass = bestFound;
+	}
+
+	// 3. CONTACT: Check if we are currently touching grown grass
+	nearGrass = false;
+	for (auto& g : app.m_grass) {
+		if (g.state == GrassState::grown && Collision::checkSheepGrass(*this, g)) {
+			nearGrass = true;
+			targetGrass = &g; // Lock onto the one we are touching
+			break;
+		}
+	}
+
+	// 4. Search for NEW grass only if we don't have a valid target
+	if (fullness < 50.0f && targetGrass == nullptr) {
+		float closestDist = detection_radius;
+		grass* bestFound = nullptr;
+
+		for (auto& g : app.m_grass) {
+			if (g.state == GrassState::grown) {
+				float d = Vector2Distance(position, g.position);
+				if (d < closestDist) {
+					closestDist = d;
+					bestFound = &g;
+				}
+			}
+		}
+		targetGrass = bestFound;
+	}
+
+	// 5. Mating Sense
+	for (auto& other : app.m_sheep) {
+		if (this != &other && other.isAlive && Collision::checkSheepSheep(*this, other)) {
+			nearSheep = true;
 			if (HP >= 60.f && reproduce_cd <= 0.f && other.HP >= 60.f && other.reproduce_cd <= 0.f) {
 				canMate = true;
 				mateposition = other.position;
 			}
 		}
 	}
-	if (state == sheepState::roaming) {
-		if (pathrefreshcd >= 0.5f && targetGrass != nullptr) {
-			path = Pathfinding::findPath(position, targetGrass->position, app.m_grass);
-			pathrefreshcd = 0.f;
-		}
-		else if (pathrefreshcd >= 0.5f && nearSheep)
-		{
-			path = Pathfinding::findPath(position, mateposition, app.m_grass);
-			pathrefreshcd = 0.f;
-		}
-	}
-
 
 
 	for (auto& m : app.m_manure) {
@@ -192,36 +225,60 @@ void sheep::sense(App& app) {
 	}
 }
 
-void sheep::decide() {
+void sheep::decide(App& app) { // Added App& app to call pathfinding
 	if (!isAlive) {
 		state = sheepState::dead;
 		return;
 	}
+
+	bool targetIsGrown = (targetGrass != nullptr && targetGrass->state == GrassState::grown);
+
+	// --- PATHFINDING LOGIC ---
+	// Only calculate a new path if we have a target AND we aren't already on a path
+	if (targetGrass->position.x != 0 && path.empty() && state == sheepState::roaming) {
+		path = Pathfinding::findPath(position, targetGrass->position, app.m_grass);
+	}
+
+	// Emergency: If fleeing, clear the food path
+	if (nearWolf) {
+		path.clear();
+	}
+
+	// --- STATE MACHINE ---
 	switch (state) {
 	case sheepState::roaming:
 		if (nearWolf) state = sheepState::fleeing;
-		else if (nearGrass && targetGrass != nullptr &&
-			targetGrass->state == GrassState::grown && eat_cd >= 2.0f) {
+		// Safety: only transition to eating if targetGrass is NOT null
+		else if (nearGrass && targetIsGrown && eat_cd >= 2.0f) {
 			state = sheepState::eating;
+			path.clear();
 		}
 		else if (canMate) state = sheepState::reproducing;
+
+		// Pathfinding trigger
+		if (targetIsGrown && path.empty()) {
+			path = Pathfinding::findPath(position, targetGrass->position, app.m_grass);
+		}
 		break;
+		break;
+
 	case sheepState::eating:
 		if (nearWolf) state = sheepState::fleeing;
-		else if (!nearGrass) state = sheepState::roaming;
-		else if (targetGrass == nullptr || targetGrass->state != GrassState::grown) {
+		else if (!nearGrass || targetGrass == nullptr || targetGrass->state != GrassState::grown) {
 			state = sheepState::roaming;
 		}
 		else if (fullness >= 100.f) state = sheepState::full;
-		else if (canMate) state = sheepState::reproducing;
 		break;
+
 	case sheepState::fleeing:
 		if (!nearWolf) state = sheepState::roaming;
 		break;
+
 	case sheepState::reproducing:
 		if (nearWolf) state = sheepState::fleeing;
 		else if (reproduce_cd > 0.f) state = sheepState::roaming;
 		break;
+
 	case sheepState::full:
 		if (fullness <= 25.f || nearManure) state = sheepState::roaming;
 		break;
@@ -230,29 +287,22 @@ void sheep::decide() {
 
 void sheep::act(float dt, App& app, Vector2 wolfpos) {
 	acceleration = drag();
-	acceleration = drag();
 
-	// 1. Priority: Follow the A* path if it exists
+	// 1. Follow A* path as top priority
 	if (!path.empty()) {
-		Vector2 nextWaypoint = path.front();
-		acceleration += seek(nextWaypoint);
-
-		// Check for arrival at the current breadcrumb
-		if (Vector2Distance(position, nextWaypoint) < (tile_len * 0.45f)) {
+		Vector2 target = path.front();
+		acceleration += seek(target);
+		if (Vector2Distance(position, target) < (tile_len * 0.25f)) {
 			path.erase(path.begin());
 		}
 	}
-	// 2. State-specific behaviors if no path is being followed
+	// 2. Behavioral fallbacks
 	else {
 		switch (state) {
-		case sheepState::roaming:
-			acceleration += roam();
-			break;
-		case sheepState::fleeing:
-			acceleration += flee(wolfpos);
-			break;
-		case sheepState::eating:
-		{
+		case sheepState::roaming: acceleration += roam(); break;
+		case sheepState::fleeing: acceleration += flee(wolfpos); break;
+		case sheepState::reproducing: acceleration += cohesion(); break;
+		case sheepState::eating: {
 			velocity = { 0.f, 0.f }; // stop moving while eating
 			fullness += 20.f * dt;
 			HP += 10.f * dt;
@@ -280,15 +330,10 @@ void sheep::act(float dt, App& app, Vector2 wolfpos) {
 				}
 				state = sheepState::full;
 			}
-		}
-			break;
-		case sheepState::reproducing:
-			acceleration += cohesion(); // Move toward mate position
-			break;
+		} break;
 		}
 	}
 
-	// 3. Final Physical Constraints
 	acceleration += avoidBorders();
 	velocity += acceleration * dt;
 	velocity = Vector2Clamp(velocity, { -max_speed, -max_speed }, { max_speed, max_speed });
@@ -449,7 +494,7 @@ wolf::wolf()
 	seekweight = 2.f;
 	roamweight = 3.f;
 	dragweight = 0.1f;
-	avoidborderweight = 5.f;
+	avoidborderweight = 2.f;
 }
 
 void wolf::update(float dt, App& app)
@@ -462,7 +507,7 @@ void wolf::update(float dt, App& app)
 	if (hunger >= 100.f) {
 		hunger = 100.f;
 	}
-	if (hunger <= 0.f) {
+	if (hunger < 0.f) {
 		hunger = 0.f;
 	}
 
@@ -514,32 +559,31 @@ void wolf::sense(App& app)
 	hit = false;
 	float closestDist = detection_radius;
 
-	if (state == wolfState::attacking && nearSheep && pathrefreshcd >= 0.5f) {
-		path = Pathfinding::findPath(position, targetsheeppos, app.m_grass);
-		pathrefreshcd = 0.f;
-	}
-	else if (state == wolfState::returning && pathrefreshcd >= 0.5f)
-	{
-		path = Pathfinding::findPath(position, denposition, app.m_grass);
-		pathrefreshcd = 0.f;
-	}
-	for (auto& s : app.m_sheep)
-	{
-		float dist = Vector2Distance(position, s.position);
+	// 1. FIRST: Find the sheep
+	for (auto& s : app.m_sheep) {
 		if (!s.isAlive) continue;
-		// Find closest sheep within radius
+		float dist = Vector2Distance(position, s.position);
 		if (dist < closestDist) {
 			closestDist = dist;
 			targetsheeppos = s.position;
 			nearSheep = true;
 		}
-		if (Collision::checkWolfSheep(*this, s))
-		{
-			if (hit_cd >= 10.0f) {
-				hit = true;
-				hit_cd = 0.f;
-				s.isAlive = false;
-			}
+		if (Collision::checkWolfSheep(*this, s) && hit_cd >= 10.0f) {
+			hit = true;
+			hit_cd = 0.f;
+			s.isAlive = false;
+		}
+	}
+
+	// 2. SECOND: Pathfind based on what we found
+	if (pathrefreshcd >= 0.5f) {
+		if (state == wolfState::attacking && nearSheep) {
+			path = Pathfinding::findPath(position, targetsheeppos, app.m_grass);
+			pathrefreshcd = 0.f;
+		}
+		else if (state == wolfState::returning) {
+			path = Pathfinding::findPath(position, denposition, app.m_grass);
+			pathrefreshcd = 0.f;
 		}
 	}
 	if (Collision::checkWolfWindow(*this, app.bounds))
@@ -557,74 +601,88 @@ void wolf::decide() {
 
 	case wolfState::roaming:
 		if (nearSheep) state = wolfState::attacking;
-		else if (hunger <= 20.f) state = wolfState::returning; // Go back to den
+		else if (hunger <= 25.f) state = wolfState::returning; // Go back to den
 		break;
 
 	case wolfState::attacking:
 		if (!nearSheep) state = wolfState::roaming;
-		else if (hunger <= 20.f) state = wolfState::returning;
+		else if (hunger <= 25.f) state = wolfState::returning;
 		break;
 	}
 }
 
 void wolf::act(float dt, App& app) {
-	acceleration = drag(); // Apply drag as a base
+	acceleration = drag(); // Base friction
 
-	// Handle hunger/sleeping logic first
-	if (state == wolfState::sleeping) {
-		hunger += 10.0f * dt;
-		velocity = { 0, 0 };
+	// --- KEEP: Hit and Hunger Logic ---
+	if (hit) {
+		hunger -= 100.f;
+		if (hunger < 0) hunger = 0;
+		hit = false;
+	}
+
+	switch (state) {
+	case wolfState::roaming:
+	case wolfState::attacking:
+		hunger += 20.f * dt;
+		break;
+	case wolfState::sleeping:
+		hunger += 10.f * dt;
+		velocity = { 0,0 };
+		return; 
+	}
+
+	// 1. ARRIVAL LOGIC (Fixes the Den/Target stuck issue)
+	// If we are very close to the den and returning, snap and sleep
+	if (state == wolfState::returning && Vector2Distance(position, denposition) < 15.0f) {
 		position = denposition;
+		velocity = { 0,0 };
+		state = wolfState::sleeping;
+		path.clear();
 		return;
 	}
 
-	hunger += 20.0f * dt;
-
-	// 1. Path-Following Priority
-	// This allows the wolf to navigate walls in ANY state (attacking, returning, or roaming)
+	// 2. MOVEMENT LOGIC
+	// Priority 1: Follow the A* Path
 	if (!path.empty()) {
 		Vector2 nextWaypoint = path.front();
 		acceleration += seek(nextWaypoint);
 
-		// Generous arrival radius to prevent overshooting/jittering
+		// Pop waypoint when close enough
 		if (Vector2Distance(position, nextWaypoint) < (tile_len * 0.45f)) {
 			path.erase(path.begin());
 		}
 	}
-	// 2. Default behaviors if path is empty (A* couldn't find a path or we arrived)
+	// Priority 2: Direct Seek (If in same tile as target or path is finished)
 	else {
 		switch (state) {
-		case wolfState::attacking: acceleration += seek(targetsheeppos); break;
-		case wolfState::roaming:   acceleration += roam(); break;
+		case wolfState::attacking:
+			acceleration += seek(targetsheeppos);
+			break;
 		case wolfState::returning:
-			if (!path.empty()) {
-				acceleration += seek(path.front());
-				if (Vector2Distance(position, path.front()) < (tile_len * 0.45f)) {
-					path.erase(path.begin());
-				}
-			}
-			else {
-				// Fallback to direct seek if no path remains
-				acceleration += seek(state == wolfState::attacking ? targetsheeppos : denposition);
-			}
+			acceleration += seek(denposition);
+			break;
+		case wolfState::roaming:
+			acceleration += roam();
 			break;
 		}
 	}
 
-	// 3. Physics & Collision
+	// 3. PHYSICS INTEGRATION
 	acceleration += avoidBorders();
 	velocity += acceleration * dt;
-	velocity = Vector2Clamp(velocity, { -max_speed, -max_speed }, { max_speed, max_speed });
+
+	// Clamp speed
+	float currSpeed = Vector2Length(velocity);
+	if (currSpeed > max_speed) {
+		velocity = Vector2Scale(Vector2Normalize(velocity), max_speed);
+	}
+
 	position += velocity * dt;
 
-	checkWallCollision(app); // Safety clamp
-
-	// Final check for the den arrival
-	if (state == wolfState::returning && Vector2Distance(position, denposition) < 10.f) {
-		state = wolfState::sleeping;
-	}
+	// 4. POST-MOVE COLLISION
+	checkWallCollision(app);
 }
-
 Vector2 wolf::roam()
 {
 	float rx = (float)GetRandomValue(-100, 100) / 100.0f;

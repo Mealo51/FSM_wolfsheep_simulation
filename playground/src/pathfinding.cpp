@@ -40,83 +40,94 @@ namespace Pathfinding {
 		return path;
 	}
 
-	std::vector<Vector2> findPath(Vector2 startPos, Vector2 targetPos, const std::vector<grass>& world) {
-		// 1. Convert pixels to Grid Coordinates
-		int startX = Math::toint(floor(startPos.x / tile_len));
-		int startY = Math::toint(floor(startPos.y / tile_len));
-		int endX = Math::toint(floor(targetPos.x / tile_len));
-		int endY = Math::toint(floor(targetPos.y / tile_len));
+    std::vector<Vector2> findPath(Vector2 startPos, Vector2 targetPos, const std::vector<grass>& world) {
+        // 1. Coordinate Setup
+        int startX = Math::tointd(floor(startPos.x / tile_len));
+        int startY = Math::tointd(floor(startPos.y / tile_len));
+        int endX = Math::tointd(floor(targetPos.x / tile_len));
+        int endY = Math::tointd(floor(targetPos.y / tile_len));
 
-		// 1. Safety: If start and end are the same tile, just go straight to target
-		if (startX == endX && startY == endY) {
-			return { targetPos };
-		}
+        // Bounds Check
+        if (startX < 0 || startX >= tile_x || startY < 0 || startY >= tile_y) return {};
+        if (endX < 0 || endX >= tile_x || endY < 0 || endY >= tile_y) return {};
 
-		// 2. Bounds Check
-		if (endX < 0 || endX >= tile_x || endY < 0 || endY >= tile_y) return {};
+        // If target is blocked, we can't path there
+        int targetIdx = (endY * (int)tile_x) + endX;
+        if (world[targetIdx].state == GrassState::blocked) return {};
 
-		// 3. If target is a WALL, find path to the nearest open neighbor instead of failing
-		int targetIdx = (endY * (int)tile_x) + endX;
-		if (world[targetIdx].state == GrassState::blocked) return {};
+        // If already in the target tile, return the target position
+        if (startX == endX && startY == endY) return { targetPos };
 
-		// 2. Setup lists
-		std::vector<Node*> openList;
-		std::unordered_set<int> closedList; // Use indices for the closed list
+        // 2. A* Algorithm Setup
+        std::vector<Node*> openList;
+        std::unordered_set<int> closedList;
+        std::vector<Node*> allNodes; // For memory cleanup
 
-		Node* startNode = new Node(startX, startY);
-		openList.push_back(startNode);
+        Node* startNode = new Node(startX, startY);
+        startNode->g = 0;
+        startNode->h = GetDistance(startX, startY, endX, endY);
+        openList.push_back(startNode);
+        allNodes.push_back(startNode);
 
-		while (!openList.empty()) {
-			// Find node with lowest F cost
-			auto currentIt = std::min_element(openList.begin(), openList.end(), [](Node* a, Node* b) {
-				return a->fCost() < b->fCost();
-				});
-			Node* current = *currentIt;
+        while (!openList.empty()) {
+            // Get node with lowest F cost
+            auto currentIt = std::min_element(openList.begin(), openList.end(), [](Node* a, Node* b) {
+                return a->fCost() < b->fCost();
+                });
 
-			// Check if we reached the target
-			if (current->x == endX && current->y == endY) {
-				return retracePath(current); // Helper to build the Vector2 list
-			}
+            Node* current = *currentIt;
 
-			openList.erase(currentIt);
-			closedList.insert((current->y * (int)tile_x) + current->x);
+            // Check if we reached the target
+            if (current->x == endX && current->y == endY) {
+                std::vector<Vector2> finalPath = retracePath(current);
+                for (auto n : allNodes) delete n; // Cleanup
+                return finalPath;
+            }
 
-			// 3. Check Neighbors (Up, Down, Left, Right)
-			for (Vector2 dir : {Vector2{ 0,1 }, { 0,-1 }, { 1,0 }, { -1,0 }}) {
-				int nx = current->x + (int)dir.x;
-				int ny = current->y + (int)dir.y;
-				int nIndex = (ny * (int)tile_x) + nx;
+            // Move current from open to closed
+            openList.erase(currentIt);
+            closedList.insert((current->y * (int)tile_x) + current->x);
 
-				if (nx < 0 || nx >= tile_x || ny < 0 || ny >= tile_y) continue;
-				if (world[nIndex].state == GrassState::blocked || closedList.count(nIndex)) continue;
+            // 3. Process Neighbors (Up, Down, Left, Right)
+            for (Vector2 dir : {Vector2{ 0, 1 }, { 0, -1 }, { 1, 0 }, { -1, 0 }}) {
+                int nx = current->x + (int)dir.x;
+                int ny = current->y + (int)dir.y;
+                int nIndex = (ny * (int)tile_x) + nx;
 
-				// Calculate the cost to move to this neighbor
-				float newGCost = current->gCost + 1.0f; // Each tile costs 1
+                // Skip if out of bounds, blocked, or already evaluated
+                if (nx < 0 || nx >= tile_x || ny < 0 || ny >= tile_y) continue;
+                if (world[nIndex].state == GrassState::blocked || closedList.count(nIndex)) continue;
 
-				// Check if neighbor is already in openList
-				Node* neighbor = nullptr;
-				for (Node* n : openList) {
-					if (n->x == nx && n->y == ny) {
-						neighbor = n;
-						break;
-					}
-				}
+                float newGCost = current->g + 1.0f;
 
-				if (neighbor == nullptr) {
-					// New node: create it and add to openList
-					Node* newNode = new Node(nx, ny);
-					newNode->gCost = newGCost;
-					newNode->hCost = GetDistance(nx, ny, endX, endY);
-					newNode->parent = current;
-					openList.push_back(newNode);
-				}
-				else if (newGCost < neighbor->gCost) {
-					// Better path found to an existing node: update it
-					neighbor->gCost = newGCost;
-					neighbor->parent = current;
-				}
-			}
-		}
-		return {}; // No path found
-	}
+                // Check if neighbor is already in openList
+                Node* neighbor = nullptr;
+                for (Node* n : openList) {
+                    if (n->x == nx && n->y == ny) {
+                        neighbor = n;
+                        break;
+                    }
+                }
+
+                if (neighbor == nullptr) {
+                    // Discover new node
+                    Node* newNode = new Node(nx, ny);
+                    newNode->g = newGCost;
+                    newNode->h = GetDistance(nx, ny, endX, endY);
+                    newNode->parent = current;
+                    openList.push_back(newNode);
+                    allNodes.push_back(newNode);
+                }
+                else if (newGCost < neighbor->g) {
+                    // Found a better path to an existing node
+                    neighbor->g = newGCost;
+                    neighbor->parent = current;
+                }
+            }
+        }
+
+        // Cleanup memory if no path is found
+        for (auto n : allNodes) delete n;
+        return {};
+    }
 }
