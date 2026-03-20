@@ -48,6 +48,7 @@ sheep::sheep()
 	targetGrass = nullptr;
 
 	//movement
+	pathrefreshcd = 0.f;
 	velocity = { 0.f,0.f };
 	acceleration = { 0.f,0.f };
 	speed = 1.f * tile_len;
@@ -55,10 +56,10 @@ sheep::sheep()
 	fleeweight = 5.f;
 	roamweight = 1.8f;
 	dragweight = 0.1f;
+	seekweight = 2.f;
 	cohesionweight = 2.f;
 	avoidmanureweight = 0.8f;
 	avoidborderweight = 4.f;
-	avoidwallsweight = 3.f;
 }
 
 void sheep::update(float dt, App& app, Vector2 wolfpos)
@@ -68,6 +69,7 @@ void sheep::update(float dt, App& app, Vector2 wolfpos)
 	eat_cd += dt;
 	sensecd += dt;
 	decidecd += dt;
+	pathrefreshcd += dt;
 
 	if (HP >= 100.f) HP = 100.f;
 	if (fullness >= 100.f) fullness = 100.f;
@@ -103,6 +105,8 @@ void sheep::render() const
 		static_cast<int>(position.y) - 40, 10, BLACK);
 	Color debugVisionColor = nearWolf ? RED : GREEN;
 	DrawCircleLinesV(position, detection_radius, debugVisionColor);
+	if (!path.empty()) DrawLineV(position, path.front(), BLUE);
+
 	switch (state)
 	{
 	case sheepState::roaming:
@@ -152,7 +156,6 @@ void sheep::sense(App& app) {
 			break; // Found food, stop looking
 		}
 	}
-
 	for (auto& other : app.m_sheep) {
 		if (this != &other && Collision::checkSheepSheep(*this, other)) {
 			nearSheep = true;
@@ -163,6 +166,19 @@ void sheep::sense(App& app) {
 			}
 		}
 	}
+	if (state == sheepState::roaming) {
+		if (pathrefreshcd >= 0.5f && targetGrass != nullptr) {
+			path = Pathfinding::findPath(position, targetGrass->position, app.m_grass);
+			pathrefreshcd = 0.f;
+		}
+		else if (pathrefreshcd >= 0.5f && nearSheep)
+		{
+			path = Pathfinding::findPath(position, mateposition, app.m_grass);
+			pathrefreshcd = 0.f;
+		}
+	}
+
+
 
 	for (auto& m : app.m_manure) {
 		if (Collision::checkSheepManure(*this, m)) {
@@ -184,7 +200,7 @@ void sheep::decide() {
 	switch (state) {
 	case sheepState::roaming:
 		if (nearWolf) state = sheepState::fleeing;
-		else if (nearGrass && targetGrass != nullptr && 
+		else if (nearGrass && targetGrass != nullptr &&
 			targetGrass->state == GrassState::grown && eat_cd >= 2.0f) {
 			state = sheepState::eating;
 		}
@@ -214,72 +230,71 @@ void sheep::decide() {
 
 void sheep::act(float dt, App& app, Vector2 wolfpos) {
 	acceleration = drag();
+	acceleration = drag();
 
-	switch (state) {
-	case sheepState::roaming:
-		acceleration += roam();
-		if (nearSheep)acceleration += cohesion();
-		for (auto& m : app.m_manure) {
-			acceleration += avoidmanure(m.position);
-		}
-		for (auto& g : app.m_grass) {
-			if (g.state == GrassState::blocked) {
-				acceleration += avoidWalls(g.position);
-			}
-		}
-		acceleration += avoidBorders();
-		break;
-	case sheepState::eating:
-	{
-		velocity = { 0.f, 0.f }; // stop moving while eating
-		fullness += 20.f * dt;
-		HP += 10.f * dt;
-		eating = false;
+	// 1. Priority: Follow the A* path if it exists
+	if (!path.empty()) {
+		Vector2 nextWaypoint = path.front();
+		acceleration += seek(nextWaypoint);
 
-		// Track how much they've eaten in this one sitting
-		static float current_meal_timer = 0.f;
-		current_meal_timer += dt;
-
-		// Limit: Eat for 2 seconds
-		if (current_meal_timer >= 2.0f) {
-			current_meal_timer = 0.f; // Reset for next time
-			eat_cd = 0.f;
-			if (targetGrass != nullptr) {
-				targetGrass->state = GrassState::dirt;
-				targetGrass->grow_progress = 0.f;
-			}
-			state = sheepState::roaming; // Go back to roaming instead of 'full'
+		// Check for arrival at the current breadcrumb
+		if (Vector2Distance(position, nextWaypoint) < (tile_len * 0.45f)) {
+			path.erase(path.begin());
 		}
-		else if (fullness >= 100.f) { // Once the sheep is full enough, the grass is "eaten"
-			eat_cd = 0.f; // reset eat cooldown
-			if (targetGrass != nullptr) {
-				targetGrass->state = GrassState::dirt; // Grass is gone!
-				targetGrass->grow_progress = 0.f;       // Reset growth timer
-			}
-			state = sheepState::full;
-		}
-		break;
 	}
-	case sheepState::fleeing:
-		acceleration += flee(wolfpos);
-		acceleration += avoidBorders();
-		break;
-	case sheepState::reproducing:
-		acceleration += cohesion();
-		break;
-	case sheepState::full:
-		if (defecate_cd <= 0.f) {
-			defecate_cd = 10.f; //reset defecate cooldown
-			app.m_manure.emplace_back(defecate());
-			fullness -= 40.f;
+	// 2. State-specific behaviors if no path is being followed
+	else {
+		switch (state) {
+		case sheepState::roaming:
+			acceleration += roam();
+			break;
+		case sheepState::fleeing:
+			acceleration += flee(wolfpos);
+			break;
+		case sheepState::eating:
+		{
+			velocity = { 0.f, 0.f }; // stop moving while eating
+			fullness += 20.f * dt;
+			HP += 10.f * dt;
+			eating = false;
+
+			// Track how much they've eaten in this one sitting
+			static float current_meal_timer = 0.f;
+			current_meal_timer += dt;
+
+			// Limit: Eat for 2 seconds
+			if (current_meal_timer >= 2.0f) {
+				current_meal_timer = 0.f; // Reset for next time
+				eat_cd = 0.f;
+				if (targetGrass != nullptr) {
+					targetGrass->state = GrassState::dirt;
+					targetGrass->grow_progress = 0.f;
+				}
+				state = sheepState::roaming; // Go back to roaming instead of 'full'
+			}
+			else if (fullness >= 100.f) { // Once the sheep is full enough, the grass is "eaten"
+				eat_cd = 0.f; // reset eat cooldown
+				if (targetGrass != nullptr) {
+					targetGrass->state = GrassState::dirt; // Grass is gone!
+					targetGrass->grow_progress = 0.f;       // Reset growth timer
+				}
+				state = sheepState::full;
+			}
 		}
-		break;
+			break;
+		case sheepState::reproducing:
+			acceleration += cohesion(); // Move toward mate position
+			break;
+		}
 	}
 
-	//movement
+	// 3. Final Physical Constraints
+	acceleration += avoidBorders();
 	velocity += acceleration * dt;
 	velocity = Vector2Clamp(velocity, { -max_speed, -max_speed }, { max_speed, max_speed });
 	position += velocity * dt;
+
+	checkWallCollision(app);
 }
 
 
@@ -299,6 +314,13 @@ Vector2 sheep::roam()
 
 	Vector2 drift = Vector2Normalize({ rx, ry });
 	return drift * speed * roamweight;
+}
+
+Vector2 sheep::seek(Vector2 target)
+{
+	Vector2 toTarget = target - position;
+	auto desired_velocity = Vector2Normalize(toTarget) * speed;
+	return (desired_velocity - velocity) * seekweight;
 }
 
 Vector2 sheep::drag()
@@ -350,15 +372,39 @@ Vector2 sheep::avoidBorders()
 	return { 0, 0 };
 }
 
-Vector2 sheep::avoidWalls(Vector2 pos)
-{
-	Vector2 toWall = { 0, 0 };
-	if (Vector2Length(toWall) > detection_radius) {
-		return { 0.f, 0.f }; 
+void sheep::checkWallCollision(App& app) {
+	// Check a small neighborhood of tiles around the entity
+	int startX = Math::tointd(floor((position.x - sheep_radius) / tile_len));
+	int endX = Math::tointd(floor((position.x + sheep_radius) / tile_len));
+	int startY = Math::tointd(floor((position.y - sheep_radius) / tile_len));
+	int endY = Math::tointd(floor((position.y + sheep_radius) / tile_len));
+
+	for (int y = startY; y <= endY; y++) {
+		for (int x = startX; x <= endX; x++) {
+			if (x < 0 || x >= tile_x || y < 0 || y >= tile_y) continue;
+
+			if (app.m_grass[y * (int)tile_x + x].state == GrassState::blocked) {
+				// Find the closest point on this tile to the circle center
+				float nearestX = std::max((float)x * tile_len, std::min(position.x, (x + 1) * tile_len));
+				float nearestY = std::max((float)y * tile_len, std::min(position.y, (y + 1) * tile_len));
+
+				Vector2 distVec = { position.x - nearestX, position.y - nearestY };
+				float distance = Vector2Length(distVec);
+				float overlap = sheep_radius - distance;
+
+				if (overlap > 0) {
+					// Push the circle out of the tile
+					if (distance == 0) continue; // Avoid division by zero
+					Vector2 push = Vector2Scale(Vector2Normalize(distVec), overlap);
+					position = Vector2Add(position, push);
+
+					// Kill velocity component hitting the wall
+					velocity = { 0, 0 };
+					path.clear(); // Force path recalculation
+				}
+			}
+		}
 	}
-	auto away = Vector2Normalize(position - pos);
-	auto desired_velocity = away * speed;
-	return (desired_velocity - velocity) * avoidwallsweight;
 }
 
 //action functions
@@ -404,7 +450,6 @@ wolf::wolf()
 	roamweight = 3.f;
 	dragweight = 0.1f;
 	avoidborderweight = 5.f;
-	avoidwallsweight = 4.f;
 }
 
 void wolf::update(float dt, App& app)
@@ -417,12 +462,8 @@ void wolf::update(float dt, App& app)
 	if (hunger >= 100.f) {
 		hunger = 100.f;
 	}
-	
-	if (state == wolfState::attacking && nearSheep) {
-		// Only recalculate every few frames to save CPU
-		if (pathrefreshcd >= 0.5f) {
-			path = Pathfinding::findPath(position, targetsheeppos, app.m_grass);
-		}
+	if (hunger <= 0.f) {
+		hunger = 0.f;
 	}
 
 	if (sensecd >= 0.25f) {
@@ -445,6 +486,7 @@ void wolf::render() const
 	DrawCircleV(position, detection_radius, debugColor);
 	Color debugVisionColor = nearSheep ? RED : GREEN;
 	DrawCircleLinesV(position, detection_radius, debugVisionColor);
+	if (!path.empty()) DrawLineV(position, path.front(), BLUE);
 	switch (state)
 	{
 	case wolfState::roaming:
@@ -472,6 +514,15 @@ void wolf::sense(App& app)
 	hit = false;
 	float closestDist = detection_radius;
 
+	if (state == wolfState::attacking && nearSheep && pathrefreshcd >= 0.5f) {
+		path = Pathfinding::findPath(position, targetsheeppos, app.m_grass);
+		pathrefreshcd = 0.f;
+	}
+	else if (state == wolfState::returning && pathrefreshcd >= 0.5f)
+	{
+		path = Pathfinding::findPath(position, denposition, app.m_grass);
+		pathrefreshcd = 0.f;
+	}
 	for (auto& s : app.m_sheep)
 	{
 		float dist = Vector2Distance(position, s.position);
@@ -517,49 +568,61 @@ void wolf::decide() {
 }
 
 void wolf::act(float dt, App& app) {
-	acceleration = { 0,0 };
-	acceleration += drag();
-	Vector2 currentMoveTarget = (nearSheep) ? targetsheeppos : denposition;
+	acceleration = drag(); // Apply drag as a base
 
-	if (hit) {
-		hunger -= 100.f;
-		if (hunger < 0) hunger = 0; // Clamp to 0
-		hit = false; // Reset the flag
-	}
-
-	switch (state) {
-	case wolfState::sleeping:
+	// Handle hunger/sleeping logic first
+	if (state == wolfState::sleeping) {
 		hunger += 10.0f * dt;
 		velocity = { 0, 0 };
 		position = denposition;
-		break;
-	case wolfState::roaming:
-		hunger += 20.0f * dt;
-		acceleration += roam();
-		acceleration += avoidBorders();
-		for (auto& g : app.m_grass) {
-			if (g.state == GrassState::blocked) {
-				acceleration += avoidWalls(g.position);
-			}
-		}
-		break;
-	case wolfState::attacking:
-		hunger += 20.0f * dt;
-		acceleration += seek(currentMoveTarget);
-		break;
-	case wolfState::returning:
-		acceleration += seek(denposition);
-		if (Vector2Distance(position, denposition) < 5.f) {
-			state = wolfState::sleeping;
-			position = denposition;
-			velocity = { 0, 0 };
-		}
-		break;
+		return;
 	}
 
+	hunger += 20.0f * dt;
+
+	// 1. Path-Following Priority
+	// This allows the wolf to navigate walls in ANY state (attacking, returning, or roaming)
+	if (!path.empty()) {
+		Vector2 nextWaypoint = path.front();
+		acceleration += seek(nextWaypoint);
+
+		// Generous arrival radius to prevent overshooting/jittering
+		if (Vector2Distance(position, nextWaypoint) < (tile_len * 0.45f)) {
+			path.erase(path.begin());
+		}
+	}
+	// 2. Default behaviors if path is empty (A* couldn't find a path or we arrived)
+	else {
+		switch (state) {
+		case wolfState::attacking: acceleration += seek(targetsheeppos); break;
+		case wolfState::roaming:   acceleration += roam(); break;
+		case wolfState::returning:
+			if (!path.empty()) {
+				acceleration += seek(path.front());
+				if (Vector2Distance(position, path.front()) < (tile_len * 0.45f)) {
+					path.erase(path.begin());
+				}
+			}
+			else {
+				// Fallback to direct seek if no path remains
+				acceleration += seek(state == wolfState::attacking ? targetsheeppos : denposition);
+			}
+			break;
+		}
+	}
+
+	// 3. Physics & Collision
+	acceleration += avoidBorders();
 	velocity += acceleration * dt;
 	velocity = Vector2Clamp(velocity, { -max_speed, -max_speed }, { max_speed, max_speed });
 	position += velocity * dt;
+
+	checkWallCollision(app); // Safety clamp
+
+	// Final check for the den arrival
+	if (state == wolfState::returning && Vector2Distance(position, denposition) < 10.f) {
+		state = wolfState::sleeping;
+	}
 }
 
 Vector2 wolf::roam()
@@ -605,13 +668,37 @@ Vector2 wolf::avoidBorders()
 	return { 0, 0 };
 }
 
-Vector2 wolf::avoidWalls(Vector2 pos)
-{
-	Vector2 toWall = { 0, 0 };
-	if (Vector2Length(toWall) > detection_radius) {
-		return { 0.f, 0.f };
+void wolf::checkWallCollision(App& app) {
+	// Check a small neighborhood of tiles around the entity
+	int startX = Math::tointd(floor((position.x - wolf_radius) / tile_len));
+	int endX = Math::tointd(floor((position.x + wolf_radius) / tile_len));
+	int startY = Math::tointd(floor((position.y - wolf_radius) / tile_len));
+	int endY = Math::tointd(floor((position.y + wolf_radius) / tile_len));
+
+	for (int y = startY; y <= endY; y++) {
+		for (int x = startX; x <= endX; x++) {
+			if (x < 0 || x >= tile_x || y < 0 || y >= tile_y) continue;
+
+			if (app.m_grass[y * (int)tile_x + x].state == GrassState::blocked) {
+				// Find the closest point on this tile to the circle center
+				float nearestX = std::max((float)x * tile_len, std::min(position.x, (x + 1) * tile_len));
+				float nearestY = std::max((float)y * tile_len, std::min(position.y, (y + 1) * tile_len));
+
+				Vector2 distVec = { position.x - nearestX, position.y - nearestY };
+				float distance = Vector2Length(distVec);
+				float overlap = wolf_radius - distance;
+
+				if (overlap > 0) {
+					// Push the circle out of the tile
+					if (distance == 0) continue; // Avoid division by zero
+					Vector2 push = Vector2Scale(Vector2Normalize(distVec), overlap);
+					position = Vector2Add(position, push);
+
+					// Kill velocity component hitting the wall
+					velocity = { 0, 0 };
+					path.clear(); // Force path recalculation
+				}
+			}
+		}
 	}
-	auto away = Vector2Normalize(position - pos);
-	auto desired_velocity = away * speed;
-	return (desired_velocity - velocity) * avoidwallsweight;
 }

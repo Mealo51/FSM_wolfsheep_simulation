@@ -27,16 +27,15 @@ namespace Pathfinding {
 		Node* current = endNode;
 
 		while (current != nullptr) {
-			// Convert grid coordinates back to world pixels (center of the tile)
+			// TARGET THE CENTER: (Index * Size) + (Half Size)
 			Vector2 worldPos = Vector2{
-				static_cast<float>(current->x * tile_len + tile_len / 2.0f),
-				static_cast<float>(current->y * tile_len + tile_len / 2.0f)
+				(current->x * tile_len) + (tile_len / 2.0f),
+				(current->y * tile_len) + (tile_len / 2.0f)
 			};
 			path.push_back(worldPos);
 			current = current->parent;
 		}
 
-		// The path is currently End -> Start, so we reverse it
 		std::reverse(path.begin(), path.end());
 		return path;
 	}
@@ -47,6 +46,18 @@ namespace Pathfinding {
 		int startY = Math::toint(floor(startPos.y / tile_len));
 		int endX = Math::toint(floor(targetPos.x / tile_len));
 		int endY = Math::toint(floor(targetPos.y / tile_len));
+
+		// 1. Safety: If start and end are the same tile, just go straight to target
+		if (startX == endX && startY == endY) {
+			return { targetPos };
+		}
+
+		// 2. Bounds Check
+		if (endX < 0 || endX >= tile_x || endY < 0 || endY >= tile_y) return {};
+
+		// 3. If target is a WALL, find path to the nearest open neighbor instead of failing
+		int targetIdx = (endY * (int)tile_x) + endX;
+		if (world[targetIdx].state == GrassState::blocked) return {};
 
 		// 2. Setup lists
 		std::vector<Node*> openList;
@@ -76,12 +87,34 @@ namespace Pathfinding {
 				int ny = current->y + (int)dir.y;
 				int nIndex = (ny * (int)tile_x) + nx;
 
-				// Stay inside bounds and avoid BLOCKED tiles
 				if (nx < 0 || nx >= tile_x || ny < 0 || ny >= tile_y) continue;
 				if (world[nIndex].state == GrassState::blocked || closedList.count(nIndex)) continue;
 
-				// If new path to neighbor is shorter or neighbor not in openList
-				// Update neighbor and add to openList...
+				// Calculate the cost to move to this neighbor
+				float newGCost = current->gCost + 1.0f; // Each tile costs 1
+
+				// Check if neighbor is already in openList
+				Node* neighbor = nullptr;
+				for (Node* n : openList) {
+					if (n->x == nx && n->y == ny) {
+						neighbor = n;
+						break;
+					}
+				}
+
+				if (neighbor == nullptr) {
+					// New node: create it and add to openList
+					Node* newNode = new Node(nx, ny);
+					newNode->gCost = newGCost;
+					newNode->hCost = GetDistance(nx, ny, endX, endY);
+					newNode->parent = current;
+					openList.push_back(newNode);
+				}
+				else if (newGCost < neighbor->gCost) {
+					// Better path found to an existing node: update it
+					neighbor->gCost = newGCost;
+					neighbor->parent = current;
+				}
 			}
 		}
 		return {}; // No path found

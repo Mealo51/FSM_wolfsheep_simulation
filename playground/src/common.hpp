@@ -35,6 +35,14 @@ namespace Math {
    {
 	   return static_cast<int>(a);
    }
+   inline float tofloatd(double a)
+   {
+       return static_cast<float>(a);
+   }
+   inline int tointd(double a)
+   {
+       return static_cast<int>(a);
+   }
 } // !Math
 
 namespace Random {

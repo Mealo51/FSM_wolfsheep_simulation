@@ -62,18 +62,27 @@ void App::update(float dt)
 
 	Vector2 mPos = GetMousePosition();
 	for (auto& g : m_grass) {
-		if (editMode && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-			// If mouse is over this tile, block it
-			if (CheckCollisionPointRec(mPos, { g.position.x, g.position.y, tile_len, tile_len })) {
-				g.state = GrassState::blocked;
+		if (editMode)
+		{
+			if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+				// If mouse is over this tile, block it
+				if (CheckCollisionPointRec(mPos, { g.position.x, g.position.y, tile_len, tile_len })) {
+					g.state = GrassState::blocked;
+				}
 			}
-		}
-		else if (editMode && IsMouseButtonDown(MOUSE_RIGHT_BUTTON) && g.state == GrassState::blocked) {
-			// If mouse is over this tile, unblock it
-			if (CheckCollisionPointRec(mPos, { g.position.x, g.position.y, tile_len, tile_len })) {
-				g.state = GetRandomValue(0,9) < 5 ? GrassState::growing : GrassState::dirt;
-				g.grow_progress = static_cast<float>(GetRandomValue(0, 12));;
+			else if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON) && g.state == GrassState::blocked) {
+				// If mouse is over this tile, unblock it
+				if (CheckCollisionPointRec(mPos, { g.position.x, g.position.y, tile_len, tile_len })) {
+					g.state = GetRandomValue(0, 9) < 5 ? GrassState::growing : GrassState::dirt;
+					g.grow_progress = static_cast<float>(GetRandomValue(0, 12));;
+				}
 			}
+			for (auto& s : m_sheep) {
+				s.path.clear();      // Clear the old, now-blocked path
+				s.pathrefreshcd = 1.0f;  // Force the update timer to trigger immediately
+			}
+			m_wolf.path.clear();
+			m_wolf.pathrefreshcd = 1.0f;
 		}
 	}
 
