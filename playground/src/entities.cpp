@@ -14,7 +14,7 @@ constexpr Color NON_COLLIDING_COLOR = LIGHTGRAY;
 manure::manure(Vector2 pos)
 {
 	position = pos;
-	lifetime = 180.f;
+	lifetime = 10.f;
 }
 
 void manure::render() const
