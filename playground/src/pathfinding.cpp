@@ -52,7 +52,7 @@ namespace Pathfinding {
         if (endX < 0 || endX >= tile_x || endY < 0 || endY >= tile_y) return {};
 
         // If target is blocked, we can't path there
-        int targetIdx = (endY * (int)tile_x) + endX;
+        int targetIdx = (endY * Math::toint(tile_x)) + endX;
         if (world[targetIdx].state == GrassState::blocked) return {};
 
         // If already in the target tile, return the target position
@@ -86,13 +86,13 @@ namespace Pathfinding {
 
             // Move current from open to closed
             openList.erase(currentIt);
-            closedList.insert((current->y * (int)tile_x) + current->x);
+            closedList.insert((current->y * Math::toint(tile_x)) + current->x);
 
             // 3. Process Neighbors (Up, Down, Left, Right)
             for (Vector2 dir : {Vector2{ 0, 1 }, { 0, -1 }, { 1, 0 }, { -1, 0 }}) {
-                int nx = current->x + (int)dir.x;
-                int ny = current->y + (int)dir.y;
-                int nIndex = (ny * (int)tile_x) + nx;
+                int nx = current->x + Math::toint(dir.x);
+                int ny = current->y + Math::toint(dir.y);
+                int nIndex = (ny * Math::toint(tile_x)) + nx;
 
                 // Skip if out of bounds, blocked, or already evaluated
                 if (nx < 0 || nx >= tile_x || ny < 0 || ny >= tile_y) continue;

@@ -30,6 +30,7 @@ struct sheep {
 
 	void update(float dt, App& app, Vector2 wolfpos);
 	void render() const;
+	void debugrender();
 
 	void sense(App& app);
 	void decide(App& app);
@@ -94,6 +95,7 @@ struct wolf {
 
 	void update(float dt, App& app);
 	void render() const;
+	void debugrender();
 
 	void sense(App& app);
 	void decide();

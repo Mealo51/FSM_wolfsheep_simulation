@@ -97,15 +97,6 @@ Color debugColor = { 255, 0, 0, 10 };
 void sheep::render() const
 {
 	DrawCircleV(position, sheep_radius, WHITE);
-	//debug drawing
-	DrawCircleV(position, detection_radius, debugColor); //detection radius
-	DrawText(TextFormat("fullness: %.1f", fullness), static_cast<int>(position.x) - 30,
-		static_cast<int>(position.y) - 50, 10, BLACK);
-	DrawText(TextFormat("HP: %.1f", HP), static_cast<int>(position.x) - 30,
-		static_cast<int>(position.y) - 40, 10, BLACK);
-	Color debugVisionColor = nearWolf ? RED : GREEN;
-	DrawCircleLinesV(position, detection_radius, debugVisionColor);
-	if (!path.empty()) DrawLineV(position, path.front(), BLUE);
 
 	switch (state)
 	{
@@ -129,6 +120,25 @@ void sheep::render() const
 		DrawText("Full", static_cast<int>(position.x) - 30,
 			static_cast<int>(position.y) - 30, 10, BLACK);
 		break;
+	}
+}
+
+void sheep::debugrender()
+{
+	//debug drawing
+	DrawCircleV(position, detection_radius, debugColor); //detection radius
+	DrawText(TextFormat("fullness: %.1f", fullness), static_cast<int>(position.x) - 30,
+		static_cast<int>(position.y) - 50, 10, BLACK);
+	DrawText(TextFormat("HP: %.1f", HP), static_cast<int>(position.x) - 30,
+		static_cast<int>(position.y) - 40, 10, BLACK);
+	Color debugVisionColor = nearWolf ? RED : GREEN;
+	DrawCircleLinesV(position, detection_radius, debugVisionColor);
+	if (path.size() > 1)
+	{
+		for (int i = 0; i < path.size()-1; i++)
+		{
+			DrawLineEx(path[i], path[i + 1], 2.5f, BLUE);
+		}
 	}
 }
 
@@ -515,10 +525,6 @@ void wolf::update(float dt, App& app)
 void wolf::render() const
 {
 	DrawCircleV(position, wolf_radius, DARKGRAY);
-	DrawCircleV(position, detection_radius, debugColor);
-	Color debugVisionColor = nearSheep ? RED : GREEN;
-	DrawCircleLinesV(position, detection_radius, debugVisionColor);
-	if (!path.empty()) DrawLineV(position, path.front(), BLUE);
 	switch (state)
 	{
 	case wolfState::roaming:
@@ -537,6 +543,20 @@ void wolf::render() const
 		DrawText("Returning", static_cast<int>(position.x) - 20,
 			static_cast<int>(position.y) - 30, 10, BLACK);
 		break;
+	}
+}
+
+void wolf::debugrender()
+{
+	DrawCircleV(position, detection_radius, debugColor);
+	Color debugVisionColor = nearSheep ? RED : GREEN;
+	DrawCircleLinesV(position, detection_radius, debugVisionColor);
+	if(path.size() > 1)
+	{
+		for (int i = 0; i < path.size()-1; i++)
+		{
+			DrawLineEx(path[i], path[i + 1], 2.5f, RED);
+		}
 	}
 }
 

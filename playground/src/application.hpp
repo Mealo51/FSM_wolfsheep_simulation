@@ -18,6 +18,7 @@ struct App
 	grass spread();
 
 	bool editMode;
+	bool debugmode;
 
 	float gx, gy;
 	Vector2 bounds{ 0,0 };

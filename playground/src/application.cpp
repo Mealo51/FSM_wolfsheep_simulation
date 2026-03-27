@@ -15,6 +15,7 @@ App::App(int width, int height)
 	gy = 0.f;
 
 	editMode = false;
+	debugmode = false;
 
 	//sheep initialization
 	const int sheep_count = 6;
@@ -59,6 +60,7 @@ grass App::spread()
 void App::update(float dt)
 {
 	if (IsKeyPressed(KEY_E)) editMode = !editMode; // Toggle mode
+	if (IsKeyPressed(KEY_D)) debugmode = !debugmode;
 
 	Vector2 mPos = GetMousePosition();
 	for (auto& g : m_grass) {
@@ -145,7 +147,18 @@ void App::render()
 	//debug
 	DrawText(TextFormat("Sheep count: %d", static_cast<int>(m_sheep.size())), WINDOW_WIDTH - 200, 20, 20, BLACK);
 	Color transparentRed = { 255, 0, 0, 150 };
-	Color transparentGray = { 100, 100, 100, 150 };
-	Color modeColor = editMode ? transparentRed : transparentGray;
-	DrawText(editMode ? "EDIT MODE : ON" : "EDIT MODE: OFF (Press E to toggle)", (WINDOW_WIDTH / 2) - 100, 10, 20, modeColor);
+	Color transparentGray = { 120, 120, 120, 180 };
+	Color modeColorE = editMode ? transparentRed : transparentGray;
+	Color modeColorD = debugmode ? transparentRed : transparentGray;
+	DrawText(editMode ? "EDIT MODE : ON (Press E to toggle)" : "EDIT MODE: OFF (Press E to toggle)", 50, 30, 20, modeColorE);
+	DrawText(debugmode ? "DEBUG MODE : ON (Press D to toggle)" : "DEBUG MODE: OFF (Press D to toggle)", 50, 50, 20, modeColorD);
+
+	if (debugmode)
+	{
+		for (auto s : m_sheep)
+		{
+			s.debugrender();
+		}
+		m_wolf.debugrender();
+	}
 }
